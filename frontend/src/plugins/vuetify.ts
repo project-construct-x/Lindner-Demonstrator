@@ -4,16 +4,35 @@
  * Framework documentation: https://vuetifyjs.com`
  */
 
-// Composables
 import { createVuetify } from 'vuetify'
-// Styles
 import '@mdi/font/css/materialdesignicons.css'
-
 import 'vuetify/styles'
 
-// https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
+const constructXDark = {
+  dark: true,
+  colors: {
+    background: '#0a0e17',
+    surface: '#111827',
+    'surface-bright': '#1a2332',
+    'surface-light': '#1e293b',
+    'surface-variant': '#243044',
+    'on-surface-variant': '#94a3b8',
+    primary: '#337ab7',
+    'primary-darken-1': '#2a6399',
+    secondary: '#818cf8',
+    accent: '#337ab7',
+    error: '#f87171',
+    info: '#38bdf8',
+    success: '#34d399',
+    warning: '#fbbf24',
+  },
+}
+
 export default createVuetify({
   theme: {
-    defaultTheme: 'system',
+    defaultTheme: 'constructXDark',
+    themes: {
+      constructXDark,
+    },
   },
 })
