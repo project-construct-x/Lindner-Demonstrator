@@ -73,7 +73,7 @@ Scaffold with the FastAPI CLI (or equivalent project layout):
 ```bash
 cd backend
 pip install "fastapi[standard]"
-fastapi new app --template standard    # or preferred layout
+fastapi new . --template standard    # scaffold into backend/ root
 # ensure requirements.txt exists for Docker build
 pip freeze > requirements.txt
 ```
@@ -81,7 +81,7 @@ pip freeze > requirements.txt
 The `Dockerfile.dev` expects:
 
 - `requirements.txt` at the backend root (used at image build time)
-- A FastAPI `app` instance importable as `app.main:app` (adjust `CMD` in `Dockerfile.dev` if the init tool uses a different module path)
+- A FastAPI `app` instance in `main.py` at the backend root, importable as `main:app` (`main` = module/file, `app` = variable — not a folder)
 - Uvicorn started with `--reload` so Python file changes restart the process automatically
 
 ### EPCIS templates folder
@@ -268,14 +268,12 @@ function toDigitalLink(sscc: string): string {
 
 ```
 backend/
-├── app/
-│   ├── main.py              # FastAPI app, routes
-│   ├── models.py            # Pydantic request/response models
-│   ├── epcis/
-│   │   ├── generator.py     # Load template, substitute SSCC, write file
-│   │   └── steps.py         # Step ID registry and validation
-│   └── config.py            # DATA_DIR, template paths
+├── main.py                  # FastAPI app, routes
+├── models.py                # Pydantic request/response models
+├── config.py                # DATA_DIR, template paths
 ├── epcis/
+│   ├── generator.py         # Load template, substitute SSCC, write file
+│   ├── steps.py             # Step ID registry and validation
 │   └── templates/
 │       ├── ausgang-hersteller.json
 │       ├── baustellen-eingang.json
@@ -356,7 +354,7 @@ Templates are JSON files placed in `backend/epcis/templates/`. One file per life
 ### Adding a New Step
 
 1. Add a template JSON in `backend/epcis/templates/`
-2. Register the step ID in `backend/app/epcis/steps.py`
+2. Register the step ID in `backend/epcis/steps.py`
 3. Add a corresponding button in the frontend `LifecycleSteps.vue`
 
 ---
@@ -376,9 +374,9 @@ Uses `Dockerfile.dev` for both services. **Requires initialized frontend and bac
 **Hot-reload without container restart:**
 
 - `./backend` and `./frontend` are bind-mounted into the containers
-- Backend: `uvicorn --reload --reload-dir /app` watches Python files
+- Backend: `uvicorn --reload --reload-dir /backend` watches Python files
 - Frontend: Vite dev server pushes HMR updates to the browser
-- Anonymous volume `/app/node_modules` keeps container deps separate from the host mount
+- Anonymous volume `/frontend/node_modules` keeps container deps separate from the host mount
 
 ```yaml
 services:
@@ -389,7 +387,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/app
+      - ./backend:/backend
       - backend-data:/data
     environment:
       - DATA_DIR=/data
@@ -401,8 +399,8 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend:/frontend
+      - /frontend/node_modules
     environment:
       - VITE_API_BASE_URL=http://localhost:8000
 

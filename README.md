@@ -129,9 +129,9 @@ demonstrator-dev-umgebung/
 ├── backend/
 │   ├── Dockerfile              # Production image
 │   ├── Dockerfile.dev          # Development image (used by compose)
-│   ├── epcis/
-│   │   └── templates/          # EPCIS event templates (one per step)
-│   └── app/                    # FastAPI application
+│   ├── main.py                 # FastAPI application entry point
+│   └── epcis/
+│       └── templates/          # EPCIS event templates (one per step)
 ├── frontend/
 │   ├── Dockerfile              # Production image (nginx)
 │   ├── Dockerfile.dev          # Development image (Vite dev server)
