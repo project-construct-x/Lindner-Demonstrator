@@ -1,6 +1,6 @@
 # Dev image — whole ./frontend is bind-mounted to /frontend at runtime.
-# Entrypoint runs npm ci inside the mounted folder when node_modules is missing.
-FROM node:24-alpine
+# Uses Debian-based Node (glibc) so native deps match Ubuntu host when shared via bind mount.
+FROM node:24-bookworm-slim
 
 WORKDIR /frontend
 
@@ -9,4 +9,4 @@ RUN chmod +x docker-entrypoint.dev.sh
 
 EXPOSE 3000
 
-ENTRYPOINT ["./docker-entrypoint.dev.sh"]
+ENTRYPOINT ["sh", "docker-entrypoint.dev.sh"]

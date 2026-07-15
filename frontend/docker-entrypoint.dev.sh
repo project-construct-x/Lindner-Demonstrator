@@ -1,8 +1,13 @@
 #!/bin/sh
 set -e
 
-if [ ! -d node_modules ]; then
-  echo "Installing npm dependencies..."
+# node_modules from the host may target a different libc (e.g. after Alpine-based installs).
+# Reinstall when the Linux glibc native binding for Vite/Rolldown is missing.
+ROLLDOWN_BINDING=node_modules/@rolldown/binding-linux-x64-gnu
+
+if [ ! -d "$ROLLDOWN_BINDING" ]; then
+  echo "Installing npm dependencies for container (linux-x64-gnu)..."
+  rm -rf node_modules
   npm ci
 fi
 
