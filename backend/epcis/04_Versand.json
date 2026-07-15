@@ -1,0 +1,36 @@
+{
+    "@context": [
+      "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+    ],
+    "type": "ObjectEvent",
+    "action": "OBSERVE",
+    "bizStep": "shipping",
+    "disposition": "in_transit",
+    "epcList": [
+      "https://id.gs1.org/00/040471116815749833"
+    ],
+    "eventTime": "2026-04-17T08:00:00.000Z",
+    "eventTimeZoneOffset": "+02:00",
+    "readPoint": {
+      "id": "https://id.gs1.org/414/4047111135074/254/9z8y"
+    },
+    "bizTransactionList": [
+      {
+        "type": "desadv",
+        "bizTransaction": "https://id.gs1.org/253/40471113333333d3e4s4d5v"
+      }
+    ],
+    "sourceList": [
+      {
+        "type": "location",
+        "source": "urn:epc:id:sgln:4047111.135074.0"
+      }
+    ],
+    "destinationList": [
+      {
+        "type": "location",
+        "destination": "urn:epc:id:sgln:4047111.987654.0"
+      }
+    ],
+    "eventID": "urn:uuid:a1b2c3d4-e5f6-4789-a012-3456789abcde"
+  }
