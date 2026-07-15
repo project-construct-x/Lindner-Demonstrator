@@ -5,7 +5,7 @@ set -e
 # Reinstall when the Linux glibc native binding for Vite/Rolldown is missing.
 ROLLDOWN_BINDING=node_modules/@rolldown/binding-linux-x64-gnu
 
-if [ ! -d "$ROLLDOWN_BINDING" ]; then
+if [ ! -d "$ROLLDOWN_BINDING" ] || [ ! -d node_modules/qrcode.vue ]; then
   echo "Installing npm dependencies for container (linux-x64-gnu)..."
   rm -rf node_modules
   npm ci
