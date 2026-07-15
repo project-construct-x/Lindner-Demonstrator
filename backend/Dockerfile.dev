@@ -1,5 +1,5 @@
-# Dev image — requires backend to be initialized first (requirements.txt + FastAPI app).
-# Source is bind-mounted at runtime; uvicorn --reload picks up changes without container restart.
+# Dev image — whole ./backend is bind-mounted to /backend at runtime.
+# Entrypoint creates .venv inside the mounted folder when missing.
 FROM python:3.12-slim
 
 WORKDIR /backend
@@ -7,9 +7,9 @@ WORKDIR /backend
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt docker-entrypoint.dev.sh ./
+RUN chmod +x docker-entrypoint.dev.sh
 
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--reload-dir", "/backend"]
+ENTRYPOINT ["./docker-entrypoint.dev.sh"]

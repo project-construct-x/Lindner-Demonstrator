@@ -68,21 +68,29 @@ npm run dev -- --host 0.0.0.0 --port 3000
 
 ### Backend (FastAPI)
 
-Scaffold with the FastAPI CLI (or equivalent project layout):
+Use a Python virtual environment for local development:
 
 ```bash
 cd backend
-pip install "fastapi[standard]"
-fastapi new . --template standard    # scaffold into backend/ root
-# ensure requirements.txt exists for Docker build
-pip freeze > requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate    # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Run locally (outside Docker):
+
+```bash
+export DATA_DIR=./data
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 The `Dockerfile.dev` expects:
 
 - `requirements.txt` at the backend root (used at image build time)
-- A FastAPI `app` instance in `main.py` at the backend root, importable as `main:app` (`main` = module/file, `app` = variable — not a folder)
+- A FastAPI `app` instance in `main.py` at the backend root, importable as `main:app`
 - Uvicorn started with `--reload` so Python file changes restart the process automatically
+
+> Docker dev bind-mounts the **entire** `./backend` folder to `/backend`. The entrypoint creates `.venv` inside that mounted folder on first start.
 
 ### EPCIS templates folder
 
@@ -392,10 +400,9 @@ Uses `Dockerfile.dev` for both services. **Requires initialized frontend and bac
 
 **Hot-reload without container restart:**
 
-- `./backend` and `./frontend` are bind-mounted into the containers
-- Backend: `uvicorn --reload --reload-dir /backend` watches Python files
-- Frontend: Vite dev server pushes HMR updates to the browser
-- Anonymous volume `/frontend/node_modules` keeps container deps separate from the host mount
+- `./backend` and `./frontend` are fully bind-mounted into `/backend` and `/frontend`
+- Backend entrypoint: creates `.venv` in the mounted folder if missing
+- Frontend entrypoint: runs `npm ci` in the mounted folder if `node_modules` is missing
 
 ```yaml
 services:
@@ -406,7 +413,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/backend
+      - type: bind
+        source: ./backend
+        target: /backend
       - backend-data:/data
     environment:
       - DATA_DIR=/data
@@ -418,8 +427,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/frontend
-      - /frontend/node_modules
+      - type: bind
+        source: ./frontend
+        target: /frontend
 
 volumes:
   backend-data:

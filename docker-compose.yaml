@@ -6,7 +6,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend:/backend
+      - type: bind
+        source: ./backend
+        target: /backend
       - backend-data:/data
     environment:
       - DATA_DIR=/data
@@ -18,8 +20,9 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/frontend
-      - /frontend/node_modules
+      - type: bind
+        source: ./frontend
+        target: /frontend
 
 volumes:
   backend-data:

@@ -58,16 +58,24 @@ A QR code encoding this URI is rendered on the page so it can be scanned (or sim
 
 ## Quick Start
 
-> **Status:** Frontend and backend are not initialized yet. Use the official scaffolding tools first (see [docs/index.md](docs/index.md#project-initialization)), then start the dev environment.
+> **Status:** Backend uses a local `.venv` for host development. Frontend is initialized. Start via Docker Compose or run services locally.
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Node.js 22+ and Python 3.12+ (for project initialization)
+- Docker and Docker Compose (optional, for containerized dev)
+- Node.js 24+ (frontend)
+- Python 3.12+ (backend)
 
-### 1. Initialize projects
+### 1. Backend setup (venv)
 
-See [docs/index.md — Project Initialization](docs/index.md#project-initialization) for the recommended commands.
+```bash
+cd backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Or use the Makefile: `make install`
 
 ### 2. Local development (hot-reload)
 
@@ -82,6 +90,15 @@ docker compose up --build
 | Frontend | http://localhost:3000 |
 | Backend API | http://localhost:8000 |
 | API docs (Swagger) | http://localhost:8000/docs |
+
+**Run backend locally (without Docker):**
+
+```bash
+cd backend && source .venv/bin/activate
+DATA_DIR=./data uvicorn main:app --reload --port 8000
+```
+
+Or: `make dev`
 
 ### Production images
 
