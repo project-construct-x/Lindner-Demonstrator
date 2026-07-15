@@ -97,7 +97,8 @@ def generate_event(
     sscc_dir = EVENTS_DIR / sscc_folder_name(session.sscc)
     sscc_dir.mkdir(parents=True, exist_ok=True)
 
-    event_file = sscc_dir / f"{step.id}.json"
+    event_name = template_path.stem
+    event_file = sscc_dir / f"{event_name}.json"
     with event_file.open("w", encoding="utf-8") as output_file:
         json.dump(event, output_file, indent=2, ensure_ascii=False)
         output_file.write("\n")
