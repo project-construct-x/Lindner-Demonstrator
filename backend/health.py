@@ -12,9 +12,10 @@ def check_readiness() -> tuple[bool, list[str]]:
         issues.append(f"EPCIS templates directory missing: {EPCIS_TEMPLATES_DIR}")
     else:
         for step in STEPS.values():
-            template_path = EPCIS_TEMPLATES_DIR / step.template_file
-            if not template_path.is_file():
-                issues.append(f"Missing template: {step.template_file}")
+            for template_file in step.template_files:
+                template_path = EPCIS_TEMPLATES_DIR / template_file
+                if not template_path.is_file():
+                    issues.append(f"Missing template: {template_file}")
 
     output_dir = settings.events_dir
     try:

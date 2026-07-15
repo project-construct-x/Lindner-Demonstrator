@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
-from epcis.generator import generate_event
+from epcis.generator import generate_step_events
 from epcis.steps import get_step
 from health import check_readiness
 from models import TriggerRequest, TriggerResponse
@@ -51,7 +51,7 @@ def trigger(step_id: str, body: TriggerRequest) -> TriggerResponse:
         raise HTTPException(status_code=404, detail=f"Unknown step: {step_id}")
 
     try:
-        _, event_file = generate_event(step, body.session, body.step)
+        _, event_files = generate_step_events(step, body.session, body.step)
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:
@@ -62,5 +62,5 @@ def trigger(step_id: str, body: TriggerRequest) -> TriggerResponse:
     return TriggerResponse(
         step_id=step.id,
         sscc=body.session.sscc,
-        event_file=event_file.name,
+        event_files=[event_file.name for event_file in event_files],
     )

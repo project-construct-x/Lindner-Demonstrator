@@ -55,4 +55,4 @@ class TriggerRequest(BaseModel):
 class TriggerResponse(BaseModel):
     step_id: str
     sscc: str
-    event_file: str
+    event_files: list[str]

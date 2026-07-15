@@ -5,7 +5,7 @@ import type { EventSession, StepContext } from '@/utils/epcis-session'
 export interface TriggerResult {
   step_id: string
   sscc: string
-  event_file: string
+  event_files: string[]
 }
 
 class TriggerService extends BaseService {

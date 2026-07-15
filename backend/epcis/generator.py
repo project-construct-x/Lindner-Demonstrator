@@ -1,8 +1,10 @@
 import json
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 from string import Template
 from pathlib import Path
+from uuid import uuid4
 
 from config import EPCIS_TEMPLATES_DIR, EVENTS_DIR
 from epcis.steps import Step
@@ -79,23 +81,42 @@ def render_template(template_path: Path, variables: dict[str, str]) -> dict:
     return event
 
 
-def generate_event(
-    step: Step,
+def _format_event_time(value: datetime) -> str:
+    utc_value = value.astimezone(timezone.utc)
+    milliseconds = utc_value.microsecond // 1000
+    return utc_value.strftime("%Y-%m-%dT%H:%M:%S.") + f"{milliseconds:03d}Z"
+
+
+def _step_context_for_template(
+    base: StepContext,
+    template_index: int,
+    template_count: int,
+) -> StepContext:
+    event_time = datetime.fromisoformat(base.eventTime.replace("Z", "+00:00"))
+    hours_back = template_count - 1 - template_index
+    if hours_back:
+        event_time -= timedelta(hours=hours_back)
+
+    return StepContext(
+        eventTime=_format_event_time(event_time),
+        eventTimeZoneOffset=base.eventTimeZoneOffset,
+        eventID=f"urn:uuid:{uuid4()}",
+    )
+
+
+def _generate_single_event(
+    template_file: str,
     session: EventSession,
     step_context: StepContext,
+    step_id: str,
+    sscc_dir: Path,
 ) -> tuple[dict, Path]:
-    validate_session(session)
-    validate_step_context(step_context)
-
-    template_path = EPCIS_TEMPLATES_DIR / step.template_file
+    template_path = EPCIS_TEMPLATES_DIR / template_file
     if not template_path.is_file():
-        raise FileNotFoundError(f"Template not found: {step.template_file}")
+        raise FileNotFoundError(f"Template not found: {template_file}")
 
     variables = _template_variables(session, step_context)
     event = render_template(template_path, variables)
-
-    sscc_dir = EVENTS_DIR / sscc_folder_name(session.sscc)
-    sscc_dir.mkdir(parents=True, exist_ok=True)
 
     event_name = template_path.stem
     event_file = sscc_dir / f"{event_name}.json"
@@ -105,10 +126,40 @@ def generate_event(
 
     logger.info(
         "Generated EPCIS event for step=%s sscc=%s file=%s\n%s",
-        step.id,
+        step_id,
         session.sscc,
         event_file,
         json.dumps(event, indent=2, ensure_ascii=False),
     )
 
     return event, event_file
+
+
+def generate_step_events(
+    step: Step,
+    session: EventSession,
+    step_context: StepContext,
+) -> tuple[list[dict], list[Path]]:
+    validate_session(session)
+    validate_step_context(step_context)
+
+    sscc_dir = EVENTS_DIR / sscc_folder_name(session.sscc)
+    sscc_dir.mkdir(parents=True, exist_ok=True)
+
+    events: list[dict] = []
+    event_files: list[Path] = []
+    template_count = len(step.template_files)
+
+    for index, template_file in enumerate(step.template_files):
+        context = _step_context_for_template(step_context, index, template_count)
+        event, event_file = _generate_single_event(
+            template_file,
+            session,
+            context,
+            step.id,
+            sscc_dir,
+        )
+        events.append(event)
+        event_files.append(event_file)
+
+    return events, event_files
