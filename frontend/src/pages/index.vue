@@ -2,7 +2,7 @@
   import { computed, onMounted, ref } from 'vue'
   import QrcodeVue from 'qrcode.vue'
   import { triggerService } from '@/services/trigger.service'
-  import { LIFECYCLE_STEPS } from '@/constants/steps'
+  import { LIFECYCLE_STEPS, LIFECYCLE_STORIES } from '@/constants/steps'
   import { createSsccSession } from '@/utils/sscc'
 
   const digitalLink = ref('')
@@ -23,8 +23,17 @@
     return index === nextStepIndex.value
   }
 
+  function getStepNumber (stepId: string): number {
+    return LIFECYCLE_STEPS.findIndex(step => step.id === stepId) + 1
+  }
+
   function isStepCompleted (stepId: string): boolean {
     return executedSteps.value.has(stepId)
+  }
+
+  function isStoryCompleted (storyIndex: number): boolean {
+    const story = LIFECYCLE_STORIES[storyIndex]
+    return story.steps.every(step => executedSteps.value.has(step.id))
   }
 
   function resetSession () {
@@ -67,7 +76,7 @@
 </script>
 
 <template>
-  <v-container class="py-8" max-width="900">
+  <v-container class="py-8" max-width="1200">
     <v-card>
       <v-card-title class="text-h5">
         Construct-X Demonstrator
@@ -115,26 +124,69 @@
           <span v-if="allStepsCompleted"> Alle Schritte abgeschlossen.</span>
         </div>
 
-        <v-row>
-          <v-col
-            v-for="(step, index) in LIFECYCLE_STEPS"
-            :key="step.id"
-            cols="12"
-            sm="6"
+        <div
+          v-for="(story, storyIndex) in LIFECYCLE_STORIES"
+          :key="story.title"
+          class="story-section"
+          :class="{ 'story-section--not-first': storyIndex > 0 }"
+        >
+          <div class="story-section__header">
+            <div class="text-h6">
+              {{ story.title }}
+            </div>
+            <div class="text-body-2 text-medium-emphasis">
+              Schritt {{ storyIndex === 0 ? '1–3' : '4–7' }}
+              <span v-if="isStoryCompleted(storyIndex)"> — abgeschlossen</span>
+            </div>
+          </div>
+
+          <div
+            class="step-row"
+            :style="{ '--step-count': story.steps.length }"
           >
-            <v-btn
-              block
-              :color="isStepCompleted(step.id) ? 'success' : isStepEnabled(step.id) ? 'primary' : undefined"
-              :disabled="!isStepEnabled(step.id)"
-              :loading="loadingStep === step.id"
-              :prepend-icon="isStepCompleted(step.id) ? 'mdi-check' : undefined"
-              :variant="isStepEnabled(step.id) ? 'elevated' : 'tonal'"
+            <button
+              v-for="step in story.steps"
+              :key="step.id"
+              class="step-button"
+              :class="{
+                'step-button--active': isStepEnabled(step.id),
+                'step-button--completed': isStepCompleted(step.id),
+                'step-button--disabled': !isStepEnabled(step.id) && !isStepCompleted(step.id),
+              }"
+              :disabled="!isStepEnabled(step.id) || loadingStep === step.id"
+              type="button"
               @click="handleStep(step.id, step.label)"
             >
-              {{ index + 1 }}. {{ step.label }}
-            </v-btn>
-          </v-col>
-        </v-row>
+              <div class="step-button__icon">
+                <v-img
+                  :alt="step.label"
+                  class="step-button__image"
+                  cover
+                  :src="step.image"
+                />
+                <v-progress-circular
+                  v-if="loadingStep === step.id"
+                  class="step-button__loading"
+                  color="primary"
+                  indeterminate
+                  size="24"
+                  width="2"
+                />
+                <v-icon
+                  v-else-if="isStepCompleted(step.id)"
+                  class="step-button__check"
+                  color="success"
+                  icon="mdi-check-circle"
+                  size="22"
+                />
+              </div>
+              <div class="step-button__content">
+                <span class="step-button__number">{{ getStepNumber(step.id) }}</span>
+                <span class="step-button__label">{{ step.label }}</span>
+              </div>
+            </button>
+          </div>
+        </div>
       </v-card-text>
     </v-card>
 
@@ -147,3 +199,117 @@
     </v-snackbar>
   </v-container>
 </template>
+
+<style scoped>
+.story-section--not-first {
+  border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  margin-top: 24px;
+  padding-top: 24px;
+}
+
+.story-section__header {
+  margin-bottom: 16px;
+}
+
+.step-row {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(var(--step-count), minmax(0, 260px));
+  width: 100%;
+}
+
+.step-button {
+  align-items: center;
+  background: rgb(var(--v-theme-surface));
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+  gap: 14px;
+  max-width: 260px;
+  padding: 16px 18px;
+  text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  width: 100%;
+}
+
+.step-button:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.step-button--active {
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 1px rgb(var(--v-theme-primary));
+}
+
+.step-button--completed {
+  border-color: rgb(var(--v-theme-success));
+}
+
+.step-button--disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.step-button:disabled {
+  pointer-events: none;
+}
+
+.step-button__icon {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  height: 72px;
+  justify-content: center;
+  position: relative;
+  width: 72px;
+}
+
+.step-button__image {
+  border-radius: 10px;
+  height: 72px;
+  width: 72px;
+}
+
+.step-button__check {
+  bottom: -4px;
+  position: absolute;
+  right: -4px;
+}
+
+.step-button__loading {
+  bottom: -4px;
+  position: absolute;
+  right: -4px;
+}
+
+.step-button__content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.step-button__number {
+  color: rgba(var(--v-theme-on-surface), 0.6);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.step-button__label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+@media (max-width: 960px) {
+  .step-row {
+    grid-template-columns: repeat(var(--step-count), minmax(200px, 260px));
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+}
+</style>
