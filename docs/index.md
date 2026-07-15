@@ -5,15 +5,16 @@
 ## Table of Contents
 
 1. [Project Goal](#project-goal)
-2. [System Overview](#system-overview)
-3. [GS1 SSCC & Digital Link](#gs1-sscc--digital-link)
-4. [Lifecycle Workflow](#lifecycle-workflow)
-5. [Frontend](#frontend)
-6. [Backend](#backend)
-7. [EPCIS Templates](#epcis-templates)
-8. [Docker & Deployment](#docker--deployment)
-9. [API Reference](#api-reference)
-10. [Development Log](#development-log)
+2. [Project Initialization](#project-initialization)
+3. [System Overview](#system-overview)
+4. [GS1 SSCC & Digital Link](#gs1-sscc--digital-link)
+5. [Lifecycle Workflow](#lifecycle-workflow)
+6. [Frontend](#frontend)
+7. [Backend](#backend)
+8. [EPCIS Templates](#epcis-templates)
+9. [Docker & Deployment](#docker--deployment)
+10. [API Reference](#api-reference)
+11. [Development Log](#development-log)
 
 ---
 
@@ -26,6 +27,85 @@ Build a **demonstrator** for the Construct-X Dataspace that shows how constructi
 - A simple web UI that simulates QR-code scans at each lifecycle stage
 
 The demo is intentionally lightweight: no real dataspace connector, no external EPCIS repository — just local event generation, file persistence, and console logging.
+
+---
+
+## Project Initialization
+
+> **Do not hand-roll project scaffolding.** Use the official tools below so the stack, tooling, and conventions stay correct.
+
+### Frontend (Vue + Vuetify)
+
+Scaffold with [create-vue](https://github.com/vuejs/create-vue) and add Vuetify via its Vite plugin:
+
+```bash
+cd frontend
+npm create vue@latest .    # TypeScript, Vue Router optional, Pinia optional
+npm install
+npm install vuetify vite-plugin-vuetify @mdi/font
+```
+
+After init, configure Vuetify in `vite.config.ts` and add file-watcher polling for Docker bind mounts:
+
+```typescript
+// vite.config.ts — required for HMR inside Docker on some hosts
+export default defineConfig({
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    watch: {
+      usePolling: true,
+    },
+  },
+})
+```
+
+The `Dockerfile.dev` expects a `"dev"` script (provided by create-vue/Vite) and runs:
+
+```bash
+npm run dev -- --host 0.0.0.0 --port 5173
+```
+
+### Backend (FastAPI)
+
+Scaffold with the FastAPI CLI (or equivalent project layout):
+
+```bash
+cd backend
+pip install "fastapi[standard]"
+fastapi new app --template standard    # or preferred layout
+# ensure requirements.txt exists for Docker build
+pip freeze > requirements.txt
+```
+
+The `Dockerfile.dev` expects:
+
+- `requirements.txt` at the backend root (used at image build time)
+- A FastAPI `app` instance importable as `app.main:app` (adjust `CMD` in `Dockerfile.dev` if the init tool uses a different module path)
+- Uvicorn started with `--reload` so Python file changes restart the process automatically
+
+### EPCIS templates folder
+
+```bash
+mkdir -p backend/epcis/templates
+```
+
+Place one JSON template per lifecycle step (see [EPCIS Templates](#epcis-templates)).
+
+### Start dev environment
+
+Once both projects are initialized:
+
+```bash
+docker compose up --build
+```
+
+| Service | Dev server | Hot-reload mechanism |
+|---------|------------|----------------------|
+| Frontend | Vite (`npm run dev`) | HMR via bind-mounted `./frontend` |
+| Backend | Uvicorn (`--reload`) | Process restart on bind-mounted `./backend` changes |
+
+No container restart is required for source edits. Rebuild the image only when dependencies change (`requirements.txt` / `package.json`).
 
 ---
 
@@ -285,16 +365,22 @@ Templates are JSON files placed in `backend/epcis/templates/`. One file per life
 
 ### Development (`docker-compose.yaml`)
 
-Uses `Dockerfile.dev` for both services:
+Uses `Dockerfile.dev` for both services. **Requires initialized frontend and backend** (see [Project Initialization](#project-initialization)).
 
 | Service | Image | Port | Notes |
 |---------|-------|------|-------|
-| `backend` | `backend/Dockerfile.dev` | 8000 | Uvicorn with `--reload`, source mounted |
-| `frontend` | `frontend/Dockerfile.dev` | 5173 | Vite dev server with HMR |
+| `backend` | `backend/Dockerfile.dev` | 8000 | Uvicorn with `--reload`, source bind-mounted |
+| `frontend` | `frontend/Dockerfile.dev` | 5173 | Vite dev server with HMR, source bind-mounted |
 | `backend-data` | volume | — | Persists `/data` across restarts |
 
+**Hot-reload without container restart:**
+
+- `./backend` and `./frontend` are bind-mounted into the containers
+- Backend: `uvicorn --reload --reload-dir /app` watches Python files
+- Frontend: Vite dev server pushes HMR updates to the browser
+- Anonymous volume `/app/node_modules` keeps container deps separate from the host mount
+
 ```yaml
-# Planned structure
 services:
   backend:
     build:
@@ -393,6 +479,15 @@ Simple health check for container orchestration.
 
 Chronological notes recorded during development.
 
+### 2026-07-15 — Dev Docker setup (no manual scaffold)
+
+**Decisions made:**
+
+- Removed hand-written Vue/FastAPI scaffold — projects will be initialized with official tools (`create-vue`, `fastapi new`)
+- `Dockerfile.dev` runs dev servers (Vite, Uvicorn `--reload`) with bind-mounted source
+- No container restart needed for code changes; rebuild image only on dependency changes
+- Frontend `vite.config.ts` needs `server.watch.usePolling: true` for reliable HMR in Docker
+
 ### 2026-07-15 — Project kickoff
 
 **Decisions made:**
@@ -410,6 +505,8 @@ Chronological notes recorded during development.
 
 **Open items:**
 
+- [ ] Initialize frontend with `npm create vue@latest` + Vuetify
+- [ ] Initialize backend with `fastapi new` (or chosen layout)
 - [ ] EPCIS template JSON files (to be provided)
 - [ ] Exact `bizStep` and `disposition` values per lifecycle step
 - [ ] GS1 check digit algorithm implementation in frontend

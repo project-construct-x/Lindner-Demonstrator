@@ -58,12 +58,20 @@ A QR code encoding this URI is rendered on the page so it can be scanned (or sim
 
 ## Quick Start
 
+> **Status:** Frontend and backend are not initialized yet. Use the official scaffolding tools first (see [docs/index.md](docs/index.md#project-initialization)), then start the dev environment.
+
 ### Prerequisites
 
 - Docker and Docker Compose
-- (Optional) Node.js 20+ and Python 3.12+ for local development without Docker
+- Node.js 22+ and Python 3.12+ (for project initialization)
 
-### Local development
+### 1. Initialize projects
+
+See [docs/index.md — Project Initialization](docs/index.md#project-initialization) for the recommended commands.
+
+### 2. Local development (hot-reload)
+
+`Dockerfile.dev` runs development servers (Vite + Uvicorn `--reload`). Source code is bind-mounted — **no container restart needed** on file changes.
 
 ```bash
 docker compose up --build
