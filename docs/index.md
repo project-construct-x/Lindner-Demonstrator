@@ -68,21 +68,27 @@ npm run dev -- --host 0.0.0.0 --port 3000
 
 ### Backend (FastAPI)
 
-Use a Python virtual environment for local development:
+Started via Docker Compose — no local setup required. `Dockerfile.dev` sets `APP_ENV=development`, bind-mounts `./backend`, and the entrypoint creates `.venv` + installs dependencies on first start.
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate    # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-```
+### Backend environment variables
 
-Run locally (outside Docker):
+Loaded via `pydantic-settings` based on `APP_ENV`:
 
-```bash
-export DATA_DIR=./data
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
+| `APP_ENV` | Env file |
+|-----------|----------|
+| `development` | `.env.development` |
+| `production` | `.env.production` |
+
+Local overrides: `.env.development.local` or `.env.local` (gitignored).
+
+| Variable | Development | Production |
+|----------|-------------|------------|
+| `LOG_LEVEL` | `DEBUG` | `INFO` |
+| `CORS_ORIGINS` | `http://localhost:3000,...` | `https://demonstrator.example.com` |
+
+Defaults (no need to set in env files): `APP_ENV` via process/Dockerfile, `OUTPUT_DIR=output` in `config.py`.
+
+Docker dev sets `APP_ENV=development` in `Dockerfile.dev` and loads `.env.development` from the bind-mounted `./backend`. The production image sets `APP_ENV=production` in `Dockerfile` and bakes in `.env.production`.
 
 The `Dockerfile.dev` expects:
 
@@ -124,7 +130,7 @@ sequenceDiagram
     participant U as User
     participant FE as Vue Frontend
     participant BE as FastAPI Backend
-    participant FS as Volume (/data)
+    participant FS as output/
 
     U->>FE: Page load
     FE->>FE: Generate new SSCC + QR code
@@ -134,7 +140,7 @@ sequenceDiagram
     FE->>BE: POST /trigger/{step-id} { sscc }
     BE->>BE: Load EPCIS template for step
     BE->>BE: Substitute SSCC into template
-    BE->>FS: Write event to epcis/{sscc}/
+    BE->>FS: Write event to output/{sscc}/
     BE->>BE: Log event to console
     BE-->>FE: 200 OK
 
@@ -297,7 +303,8 @@ Docker dev uses the bind-mounted `.env.development` — do not duplicate vars in
 backend/
 ├── main.py                  # FastAPI app, routes
 ├── models.py                # Pydantic request/response models
-├── config.py                # DATA_DIR, template paths
+├── config.py                # OUTPUT_DIR, template paths
+├── output/                  # Generated EPCIS events (gitignored)
 ├── epcis/
 │   ├── generator.py         # Load template, substitute SSCC, write file
 │   ├── steps.py             # Step ID registry and validation
@@ -320,7 +327,7 @@ backend/
 2. Validate `step-id` against known steps
 3. Load `backend/epcis/templates/{step-id}.json`
 4. Replace placeholders (e.g. `{{SSCC}}`, `{{TIMESTAMP}}`) with actual values
-5. Create directory `/data/epcis/{sscc}/` if it does not exist
+5. Create directory `backend/output/{sscc}/` if it does not exist
 6. Write event as `{step-id}.json` (or timestamped filename)
 7. Log the full event JSON to stdout
 8. Return confirmation response
@@ -329,10 +336,10 @@ backend/
 
 | Path | Description |
 |------|-------------|
-| `/data/epcis/{sscc}/` | One folder per SSCC (SSCC extracted from Digital Link) |
-| `/data/epcis/{sscc}/{step-id}.json` | Generated EPCIS event for that step |
+| `backend/output/{sscc}/` | One folder per SSCC (SSCC extracted from Digital Link) |
+| `backend/output/{sscc}/{step-id}.json` | Generated EPCIS event for that step |
 
-The `/data` path is a Docker volume in both dev and prod configurations.
+The `output/` directory is gitignored and created automatically on first event.
 
 ### Placeholder Variables (planned for templates)
 
@@ -394,9 +401,8 @@ Uses `Dockerfile.dev` for both services. **Requires initialized frontend and bac
 
 | Service | Image | Port | Notes |
 |---------|-------|------|-------|
-| `backend` | `backend/Dockerfile.dev` | 8000 | Uvicorn with `--reload`, source bind-mounted |
-| `frontend` | `frontend/Docker.dev` | 3000 | Vite dev server with HMR, source bind-mounted |
-| `backend-data` | volume | — | Persists `/data` across restarts |
+| `backend` | `backend/Dockerfile.dev` | 8000 | Uvicorn with `--reload`, full bind mount |
+| `frontend` | `frontend/Docker.dev` | 3000 | Vite dev server with HMR, full bind mount |
 
 **Hot-reload without container restart:**
 
@@ -416,9 +422,6 @@ services:
       - type: bind
         source: ./backend
         target: /backend
-      - backend-data:/data
-    environment:
-      - DATA_DIR=/data
 
   frontend:
     build:
@@ -430,9 +433,6 @@ services:
       - type: bind
         source: ./frontend
         target: /frontend
-
-volumes:
-  backend-data:
 ```
 
 ### Production
@@ -523,7 +523,7 @@ Chronological notes recorded during development.
 - Seven lifecycle steps model a circular construction material flow (manufacturer → site → install → deconstruct → return → refurbish)
 - API endpoint pattern: `POST /trigger/{step-id}` with SSCC in request body
 - EPCIS events generated from JSON templates in `backend/epcis/templates/`
-- Events persisted to Docker volume at `/data/epcis/{sscc}/`
+- Events persisted to `backend/output/{sscc}/` (gitignored)
 - Events logged to backend console for easy debugging
 - Separate Dockerfiles for dev (`Dockerfile.dev`) and prod (`Dockerfile`)
 - `docker-compose.yaml` uses dev Dockerfiles with source mounts and hot-reload

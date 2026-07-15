@@ -7,6 +7,7 @@ if [ ! -x .venv/bin/uvicorn ]; then
   .venv/bin/pip install --no-cache-dir -r requirements.txt
 fi
 
+export APP_ENV=development
 export VIRTUAL_ENV=/backend/.venv
 export PATH="/backend/.venv/bin:$PATH"
 

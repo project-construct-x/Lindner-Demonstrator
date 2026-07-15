@@ -18,8 +18,8 @@ The demonstrator lets users walk through seven supply-chain steps — from manuf
                                                                │
                                                                ▼
                                                     ┌─────────────────────┐
-                                                    │  Volume: /data/     │
-                                                    │  epcis/{sscc}/      │
+                                                    │  backend/output/    │
+                                                    │  output/{sscc}/     │
                                                     └─────────────────────┘
 ```
 
@@ -58,28 +58,15 @@ A QR code encoding this URI is rendered on the page so it can be scanned (or sim
 
 ## Quick Start
 
-> **Status:** Backend uses a local `.venv` for host development. Frontend is initialized. Start via Docker Compose or run services locally.
+> **Status:** Frontend and backend are initialized. Use Docker Compose for local development.
 
 ### Prerequisites
 
-- Docker and Docker Compose (optional, for containerized dev)
-- Node.js 24+ (frontend)
-- Python 3.12+ (backend)
+- Docker and Docker Compose
 
-### 1. Backend setup (venv)
+### Local development (hot-reload)
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-Or use the Makefile: `make install`
-
-### 2. Local development (hot-reload)
-
-`Dockerfile.dev` runs development servers (Vite + Uvicorn `--reload`). Source code is bind-mounted — **no container restart needed** on file changes.
+`Dockerfile.dev` / `Docker.dev` run development servers with bind-mounted source — **no container restart needed** on file changes. Backend entrypoint creates `.venv` and installs deps on first start; frontend entrypoint runs `npm ci` when needed.
 
 ```bash
 docker compose up --build
@@ -90,15 +77,6 @@ docker compose up --build
 | Frontend | http://localhost:3000 |
 | Backend API | http://localhost:8000 |
 | API docs (Swagger) | http://localhost:8000/docs |
-
-**Run backend locally (without Docker):**
-
-```bash
-cd backend && source .venv/bin/activate
-DATA_DIR=./data uvicorn main:app --reload --port 8000
-```
-
-Or: `make dev`
 
 ### Production images
 
@@ -137,7 +115,7 @@ Triggers EPCIS event generation for a lifecycle step.
 }
 ```
 
-The backend loads the matching template from `backend/epcis/templates/`, substitutes the SSCC, writes the event to the persistent volume under `epcis/{sscc}/`, and logs it to the console.
+The backend loads the matching template from `backend/epcis/`, substitutes the SSCC, writes the event to `backend/output/{sscc}/`, and logs it to the console.
 
 ## Project Structure
 
@@ -147,8 +125,8 @@ demonstrator-dev-umgebung/
 │   ├── Dockerfile              # Production image
 │   ├── Dockerfile.dev          # Development image (used by compose)
 │   ├── main.py                 # FastAPI application entry point
-│   └── epcis/
-│       └── templates/          # EPCIS event templates (one per step)
+│   ├── output/                 # Generated EPCIS events (gitignored)
+│   └── epcis/                  # EPCIS event templates
 ├── frontend/
 │   ├── Dockerfile              # Production image (nginx)
 │   ├── Docker.dev              # Development image (Vite dev server, used by compose)
@@ -161,10 +139,10 @@ demonstrator-dev-umgebung/
 
 ## Data Persistence
 
-Generated EPCIS events are stored on a Docker volume mounted at `/data` in the backend container:
+Generated EPCIS events are stored under `backend/output/` (gitignored):
 
 ```
-/data/epcis/{sscc}/
+backend/output/{sscc}/
 ├── ausgang-hersteller.json
 ├── baustellen-eingang.json
 └── ...

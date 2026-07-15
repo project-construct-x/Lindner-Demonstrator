@@ -9,9 +9,6 @@ services:
       - type: bind
         source: ./backend
         target: /backend
-      - backend-data:/data
-    environment:
-      - DATA_DIR=/data
 
   frontend:
     build:
@@ -23,6 +20,3 @@ services:
       - type: bind
         source: ./frontend
         target: /frontend
-
-volumes:
-  backend-data:

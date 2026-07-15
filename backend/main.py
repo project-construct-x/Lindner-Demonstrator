@@ -3,11 +3,14 @@ import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from config import get_settings
 from epcis.generator import generate_event
 from epcis.steps import get_step
 from models import TriggerRequest, TriggerResponse
 
-logging.basicConfig(level=logging.INFO)
+settings = get_settings()
+
+logging.basicConfig(level=settings.log_level.upper())
 
 app = FastAPI(
     title="Construct-X Demonstrator API",
@@ -16,7 +19,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -25,7 +28,7 @@ app.add_middleware(
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "env": settings.app_env}
 
 
 @app.post("/trigger/{step_id}", response_model=TriggerResponse)
