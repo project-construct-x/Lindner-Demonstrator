@@ -52,7 +52,7 @@ After init, configure Vuetify in `vite.config.ts` and add file-watcher polling f
 export default defineConfig({
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 3000,
     watch: {
       usePolling: true,
     },
@@ -60,10 +60,10 @@ export default defineConfig({
 })
 ```
 
-The `Dockerfile.dev` expects a `"dev"` script (provided by create-vue/Vite) and runs:
+The `Docker.dev` expects a `"dev"` script (provided by create-vue/Vite) and runs:
 
 ```bash
-npm run dev -- --host 0.0.0.0 --port 5173
+npm run dev -- --host 0.0.0.0 --port 3000
 ```
 
 ### Backend (FastAPI)
@@ -368,7 +368,7 @@ Uses `Dockerfile.dev` for both services. **Requires initialized frontend and bac
 | Service | Image | Port | Notes |
 |---------|-------|------|-------|
 | `backend` | `backend/Dockerfile.dev` | 8000 | Uvicorn with `--reload`, source bind-mounted |
-| `frontend` | `frontend/Dockerfile.dev` | 5173 | Vite dev server with HMR, source bind-mounted |
+| `frontend` | `frontend/Docker.dev` | 3000 | Vite dev server with HMR, source bind-mounted |
 | `backend-data` | volume | — | Persists `/data` across restarts |
 
 **Hot-reload without container restart:**
@@ -395,9 +395,9 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile.dev
+      dockerfile: Docker.dev
     ports:
-      - "5173:5173"
+      - "3000:3000"
     volumes:
       - ./frontend:/frontend
       - /frontend/node_modules

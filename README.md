@@ -79,7 +79,7 @@ docker compose up --build
 
 | Service | URL |
 |---------|-----|
-| Frontend | http://localhost:5173 |
+| Frontend | http://localhost:3000 |
 | Backend API | http://localhost:8000 |
 | API docs (Swagger) | http://localhost:8000/docs |
 
@@ -134,7 +134,7 @@ demonstrator-dev-umgebung/
 │       └── templates/          # EPCIS event templates (one per step)
 ├── frontend/
 │   ├── Dockerfile              # Production image (nginx)
-│   ├── Dockerfile.dev          # Development image (Vite dev server)
+│   ├── Docker.dev              # Development image (Vite dev server, used by compose)
 │   └── src/                    # Vue application
 ├── docs/
 │   └── index.md                # Development documentation

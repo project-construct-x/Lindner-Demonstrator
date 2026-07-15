@@ -1,0 +1,12 @@
+# Dev image — source is bind-mounted at runtime via docker-compose (./frontend:/frontend).
+# Rebuild only when package.json / package-lock.json change.
+FROM node:24-alpine
+
+WORKDIR /frontend
+
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
