@@ -30,20 +30,10 @@ class EventSession(BaseModel):
 
 
 class StepContext(BaseModel):
-    eventTime: str = Field(
-        ...,
-        description="EPCIS event timestamp in UTC with milliseconds",
-        examples=["2026-04-16T14:04:53.369Z"],
-    )
     eventTimeZoneOffset: str = Field(
         ...,
-        description="Local timezone offset for eventTime",
+        description="Local timezone offset for the generated eventTime",
         examples=["+02:00"],
-    )
-    eventID: str = Field(
-        ...,
-        description="Unique event identifier",
-        examples=["urn:uuid:efdb473f-371c-4e78-a981-3689911c13cb"],
     )
 
 

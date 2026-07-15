@@ -15,9 +15,7 @@ export interface EventSession {
 }
 
 export interface StepContext {
-  eventTime: string
   eventTimeZoneOffset: string
-  eventID: string
 }
 
 function gs1CheckDigit (base17: string): number {
@@ -69,10 +67,6 @@ export function createEventSession (): EventSession {
   }
 }
 
-export function formatEventTime (date: Date): string {
-  return date.toISOString()
-}
-
 export function formatEventTimeZoneOffset (date: Date): string {
   const offsetMinutes = -date.getTimezoneOffset()
   const sign = offsetMinutes >= 0 ? '+' : '-'
@@ -83,8 +77,6 @@ export function formatEventTimeZoneOffset (date: Date): string {
 
 export function createStepContext (date = new Date()): StepContext {
   return {
-    eventTime: formatEventTime(date),
     eventTimeZoneOffset: formatEventTimeZoneOffset(date),
-    eventID: `urn:uuid:${crypto.randomUUID()}`,
   }
 }
