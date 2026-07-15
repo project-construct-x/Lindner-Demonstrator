@@ -51,7 +51,7 @@ def trigger(step_id: str, body: TriggerRequest) -> TriggerResponse:
         raise HTTPException(status_code=404, detail=f"Unknown step: {step_id}")
 
     try:
-        _, event_file = generate_event(step, body.sscc)
+        _, event_file = generate_event(step, body.session, body.step)
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:
@@ -61,6 +61,6 @@ def trigger(step_id: str, body: TriggerRequest) -> TriggerResponse:
 
     return TriggerResponse(
         step_id=step.id,
-        sscc=body.sscc,
+        sscc=body.session.sscc,
         event_file=event_file.name,
     )

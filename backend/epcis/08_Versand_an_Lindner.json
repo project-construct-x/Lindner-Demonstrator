@@ -1,30 +1,30 @@
 {
-    "@context": [
-      "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
-    ],
-    "type": "ObjectEvent",
-    "action": "OBSERVE",
-    "bizStep": "shipping",
-    "disposition": "in_transit",
-    "epcList": [
-      "https://id.gs1.org/00/040471116815749844"
-    ],
-    "eventTime": "2026-06-16T08:00:00.000Z",
-    "eventTimeZoneOffset": "+02:00",
-    "readPoint": {
-      "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
-    },
-    "sourceList": [
-      {
-        "type": "location",
-        "source": "urn:epc:id:sgln:4047111.987654.0"
-      }
-    ],
-    "destinationList": [
-      {
-        "type": "location",
-        "destination": "urn:epc:id:sgln:4047111.135074.0"
-      }
-    ],
-    "eventID": "urn:uuid:a7b8c9d0-e1f2-4345-a678-9abcdef012345"
-  }
+  "@context": [
+    "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+  ],
+  "type": "ObjectEvent",
+  "action": "OBSERVE",
+  "bizStep": "shipping",
+  "disposition": "in_transit",
+  "epcList": [
+    "$sscc"
+  ],
+  "eventTime": "$eventTime",
+  "eventTimeZoneOffset": "$eventTimeZoneOffset",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+  },
+  "sourceList": [
+    {
+      "type": "location",
+      "source": "urn:epc:id:sgln:4047111.987654.0"
+    }
+  ],
+  "destinationList": [
+    {
+      "type": "location",
+      "destination": "urn:epc:id:sgln:4047111.135074.0"
+    }
+  ],
+  "eventID": "$eventID"
+}

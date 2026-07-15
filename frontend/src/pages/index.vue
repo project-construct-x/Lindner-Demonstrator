@@ -3,9 +3,17 @@
   import QrcodeVue from 'qrcode.vue'
   import { triggerService } from '@/services/trigger.service'
   import { LIFECYCLE_STEPS, LIFECYCLE_STORIES } from '@/constants/steps'
-  import { createSsccSession } from '@/utils/sscc'
+  import {
+    createEventSession,
+    createStepContext,
+    type EventSession,
+  } from '@/utils/epcis-session'
   import constructXLogo from '@/assets/cx.jpg'
+  import { env } from '@/config/env'
 
+  const swaggerUrl = `${env.backendBaseUrl}/docs`
+
+  const eventSession = ref<EventSession | null>(null)
   const digitalLink = ref('')
   const qrGradientId = useId()
   const executedSteps = ref<Set<string>>(new Set())
@@ -49,7 +57,8 @@
   }
 
   function resetSession () {
-    const session = createSsccSession()
+    const session = createEventSession()
+    eventSession.value = session
     digitalLink.value = session.digitalLink
     executedSteps.value = new Set()
     loadingStep.value = null
@@ -73,7 +82,15 @@
 
     loadingStep.value = stepId
     try {
-      const result = await triggerService.triggerStep(stepId, digitalLink.value)
+      if (!eventSession.value) {
+        throw new Error('Keine aktive SSCC-Sitzung')
+      }
+
+      const result = await triggerService.triggerStep(
+        stepId,
+        eventSession.value,
+        createStepContext(),
+      )
       executedSteps.value = new Set([...executedSteps.value, stepId])
       notify(`${label}: ${result.event_file} erzeugt`, 'success')
     } catch (error) {
@@ -109,22 +126,39 @@
         </p>
       </div>
 
-      <div class="demo__progress-card">
-        <div class="demo__progress-label">
-          <span>Fortschritt</span>
-          <span class="demo__progress-value">{{ executedSteps.size }} / {{ LIFECYCLE_STEPS.length }}</span>
+      <div class="demo__hero-aside">
+        <div class="demo__progress-card">
+          <div class="demo__progress-label">
+            <span>Fortschritt</span>
+            <span class="demo__progress-value">{{ executedSteps.size }} / {{ LIFECYCLE_STEPS.length }}</span>
+          </div>
+          <v-progress-linear
+            class="demo__progress-bar"
+            :color="allStepsCompleted ? 'success' : 'primary'"
+            height="8"
+            :model-value="progressPercent"
+            rounded
+          />
+          <span v-if="allStepsCompleted" class="demo__progress-done">
+            <v-icon icon="mdi-check-decagram" size="16" />
+            Alle Schritte abgeschlossen
+          </span>
         </div>
-        <v-progress-linear
-          class="demo__progress-bar"
-          :color="allStepsCompleted ? 'success' : 'primary'"
-          height="8"
-          :model-value="progressPercent"
-          rounded
-        />
-        <span v-if="allStepsCompleted" class="demo__progress-done">
-          <v-icon icon="mdi-check-decagram" size="16" />
-          Alle Schritte abgeschlossen
-        </span>
+
+        <v-btn
+          block
+          class="demo__api-btn"
+          color="primary"
+          :href="swaggerUrl"
+          prepend-icon="mdi-book-open-page-variant"
+          rel="noopener noreferrer"
+          rounded="lg"
+          size="small"
+          target="_blank"
+          variant="outlined"
+        >
+          Swagger API
+        </v-btn>
       </div>
     </header>
 
@@ -344,14 +378,24 @@
   max-width: 520px;
 }
 
-.demo__progress-card {
+.demo__api-btn {
+  text-transform: none;
+}
+
+.demo__hero-aside {
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.demo__progress-card {
   backdrop-filter: blur(12px);
   background: rgba(17, 24, 39, 0.7);
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 16px;
-  flex-shrink: 0;
-  min-width: 220px;
   padding: 16px 20px;
 }
 
@@ -686,8 +730,9 @@
     width: 100%;
   }
 
-  .demo__progress-card {
+  .demo__hero-aside {
     align-self: stretch;
+    min-width: 0;
     width: 100%;
   }
 
