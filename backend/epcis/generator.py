@@ -37,7 +37,7 @@ def validate_sscc(sscc: str) -> None:
 
 def validate_session(session: EventSession) -> None:
     validate_sscc(session.sscc)
-    for lgtin in (session.lgtin1, session.lgtin2, session.lgtin3):
+    for lgtin in (session.lgtin1, session.lgtin2):
         if not LGTIN_URI_PATTERN.match(lgtin):
             raise ValueError(
                 "LGTIN must be a GS1 Digital Link URI: https://id.gs1.org/01/{gtin}/10/{lot}"
@@ -89,7 +89,6 @@ def _template_variables(
         "sscc": session.sscc,
         "lgtin1": session.lgtin1,
         "lgtin2": session.lgtin2,
-        "lgtin3": session.lgtin3,
         "desadv": session.desadv,
         "eventTime": event_context.eventTime,
         "eventTimeZoneOffset": event_context.eventTimeZoneOffset,

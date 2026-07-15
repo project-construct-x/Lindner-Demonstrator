@@ -23,7 +23,6 @@ class TriggerService extends BaseService {
         sscc: session.sscc,
         lgtin1: session.lgtin1,
         lgtin2: session.lgtin2,
-        lgtin3: session.lgtin3,
         desadv: session.desadv,
       },
       step,

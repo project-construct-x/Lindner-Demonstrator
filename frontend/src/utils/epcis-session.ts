@@ -1,7 +1,6 @@
 const GS1_BASE_URI = 'https://id.gs1.org/00'
 const LGTIN_GTIN_1 = '04047111793267'
 const LGTIN_GTIN_2 = '04047111288459'
-const LGTIN_GTIN_3 = '04047111528531'
 const DESADV_PREFIX = '40471113333333'
 const LOT_CHARS = '0123456789abcdefghijklmnopqrstuvwxyz'
 
@@ -10,7 +9,6 @@ export interface EventSession {
   digitalLink: string
   lgtin1: string
   lgtin2: string
-  lgtin3: string
   desadv: string
 }
 
@@ -45,8 +43,12 @@ export function toDigitalLink (sscc: string): string {
   return `${GS1_BASE_URI}/${sscc}`
 }
 
-function toLgtin (gtin: string): string {
-  return `https://id.gs1.org/01/${gtin}/10/${randomToken(4)}`
+function toLgtin (gtin: string, lot: string): string {
+  return `https://id.gs1.org/01/${gtin}/10/${lot}`
+}
+
+function generateLot (): string {
+  return randomToken(4)
 }
 
 function generateDesadv (): string {
@@ -56,13 +58,13 @@ function generateDesadv (): string {
 export function createEventSession (): EventSession {
   const sscc = generateSscc()
   const digitalLink = toDigitalLink(sscc)
+  const lot = generateLot()
 
   return {
     sscc: digitalLink,
     digitalLink,
-    lgtin1: toLgtin(LGTIN_GTIN_1),
-    lgtin2: toLgtin(LGTIN_GTIN_2),
-    lgtin3: toLgtin(LGTIN_GTIN_3),
+    lgtin1: toLgtin(LGTIN_GTIN_1, lot),
+    lgtin2: toLgtin(LGTIN_GTIN_2, lot),
     desadv: generateDesadv(),
   }
 }

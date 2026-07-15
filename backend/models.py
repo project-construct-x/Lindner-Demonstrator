@@ -17,11 +17,6 @@ class EventSession(BaseModel):
         description="GS1 Digital Link URI for the second material class (GTIN + lot)",
         examples=["https://id.gs1.org/01/04047111288459/10/c3d4"],
     )
-    lgtin3: str = Field(
-        ...,
-        description="GS1 Digital Link URI for the transformed output class (GTIN + lot)",
-        examples=["https://id.gs1.org/01/04047111528531/10/e5f6"],
-    )
     desadv: str = Field(
         ...,
         description="GS1 Digital Link URI for the despatch advice business transaction",
