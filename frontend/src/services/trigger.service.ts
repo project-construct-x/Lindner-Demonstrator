@@ -24,6 +24,7 @@ class TriggerService extends BaseService {
         lgtin1: session.lgtin1,
         lgtin2: session.lgtin2,
         desadv: session.desadv,
+        po: session.po,
       },
       step,
     })

@@ -46,6 +46,10 @@ def validate_session(session: EventSession) -> None:
         raise ValueError(
             "desadv must be a GS1 Digital Link URI: https://id.gs1.org/253/{reference}"
         )
+    if not DESADV_URI_PATTERN.match(session.po):
+        raise ValueError(
+            "po must be a GS1 Digital Link URI: https://id.gs1.org/253/{reference}"
+        )
 
 
 def validate_step_context(step: StepContext) -> None:
@@ -90,6 +94,7 @@ def _template_variables(
         "lgtin1": session.lgtin1,
         "lgtin2": session.lgtin2,
         "desadv": session.desadv,
+        "po": session.po,
         "eventTime": event_context.eventTime,
         "eventTimeZoneOffset": event_context.eventTimeZoneOffset,
         "eventID": event_context.eventID,

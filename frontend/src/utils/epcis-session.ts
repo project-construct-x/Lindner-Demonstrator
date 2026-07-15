@@ -2,6 +2,7 @@ const GS1_BASE_URI = 'https://id.gs1.org/00'
 const LGTIN_GTIN_1 = '04047111793267'
 const LGTIN_GTIN_2 = '04047111288459'
 const DESADV_PREFIX = '40471113333333'
+const PO_PREFIX = '40471112222221'
 const LOT_CHARS = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 export interface EventSession {
@@ -10,6 +11,7 @@ export interface EventSession {
   lgtin1: string
   lgtin2: string
   desadv: string
+  po: string
 }
 
 export interface StepContext {
@@ -51,8 +53,16 @@ function generateLot (): string {
   return randomToken(4)
 }
 
+function generateBizTransaction (prefix: string): string {
+  return `https://id.gs1.org/253/${prefix}${randomToken(10)}`
+}
+
 function generateDesadv (): string {
-  return `https://id.gs1.org/253/${DESADV_PREFIX}${randomToken(10)}`
+  return generateBizTransaction(DESADV_PREFIX)
+}
+
+function generatePo (): string {
+  return generateBizTransaction(PO_PREFIX)
 }
 
 export function createEventSession (): EventSession {
@@ -66,6 +76,7 @@ export function createEventSession (): EventSession {
     lgtin1: toLgtin(LGTIN_GTIN_1, lot),
     lgtin2: toLgtin(LGTIN_GTIN_2, lot),
     desadv: generateDesadv(),
+    po: generatePo(),
   }
 }
 

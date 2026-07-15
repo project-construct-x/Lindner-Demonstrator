@@ -22,7 +22,7 @@
   "bizTransactionList": [
     {
       "type": "po",
-      "bizTransaction": "https://id.gs1.org/253/40471112222221a2b3c4d5f"
+      "bizTransaction": "$po"
     }
   ],
   "eventID": "$eventID"

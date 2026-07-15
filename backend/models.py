@@ -22,6 +22,11 @@ class EventSession(BaseModel):
         description="GS1 Digital Link URI for the despatch advice business transaction",
         examples=["https://id.gs1.org/253/40471113333333d3e4s4d5v"],
     )
+    po: str = Field(
+        ...,
+        description="GS1 Digital Link URI for the purchase order business transaction",
+        examples=["https://id.gs1.org/253/40471112222221a2b3c4d5f"],
+    )
 
 
 class StepContext(BaseModel):
