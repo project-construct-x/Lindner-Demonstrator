@@ -1,18 +1,25 @@
-# Production image — bakes in .env.production at build time (vite build --mode production)
-FROM node:24-alpine AS build
+# syntax=docker/dockerfile:1
+
+# -----------------------------------------------------------------------------
+# Stage 1: build frontend (uses .env.production via vite build --mode production)
+# -----------------------------------------------------------------------------
+FROM node:24-alpine AS builder
 
 WORKDIR /frontend
 
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
 RUN npm run build-only
 
-FROM nginx:alpine
+# -----------------------------------------------------------------------------
+# Stage 2: serve static build with nginx
+# -----------------------------------------------------------------------------
+FROM nginx:alpine AS production
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /frontend/dist /usr/share/nginx/html
+COPY --from=builder /frontend/dist /usr/share/nginx/html
 
 EXPOSE 80
 
