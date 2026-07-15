@@ -1,12 +1,29 @@
 import { fileURLToPath, URL } from 'node:url'
+import type { Plugin } from 'vite'
 import Vue from '@vitejs/plugin-vue'
 import Fonts from 'unplugin-fonts/vite'
 import { defineConfig } from 'vite'
 import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 
+function probeEndpoints (): Plugin {
+  return {
+    name: 'probe-endpoints',
+    configureServer (server) {
+      for (const path of ['/health', '/ready']) {
+        server.middlewares.use(path, (_req, res) => {
+          res.statusCode = 200
+          res.setHeader('Content-Type', 'text/plain')
+          res.end('ok\n')
+        })
+      }
+    },
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    probeEndpoints(),
     Vue({
       template: { transformAssetUrls },
     }),

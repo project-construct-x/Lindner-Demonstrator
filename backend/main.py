@@ -1,11 +1,12 @@
 import logging
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
 from epcis.generator import generate_event
 from epcis.steps import get_step
+from health import check_readiness
 from models import TriggerRequest, TriggerResponse
 
 settings = get_settings()
@@ -27,8 +28,20 @@ app.add_middleware(
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "env": settings.app_env}
+def health() -> Response:
+    return Response(content="ok\n", media_type="text/plain")
+
+
+@app.get("/ready")
+def ready() -> Response:
+    is_ready, issues = check_readiness()
+    if not is_ready:
+        return Response(
+            content="\n".join(issues) + "\n",
+            media_type="text/plain",
+            status_code=503,
+        )
+    return Response(content="ok\n", media_type="text/plain")
 
 
 @app.post("/trigger/{step_id}", response_model=TriggerResponse)

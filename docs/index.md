@@ -490,12 +490,20 @@ Trigger EPCIS event generation for a lifecycle step.
 | 422 | Invalid request body (missing `sscc`) |
 | 500 | File system or template processing error |
 
-### `GET /health` (planned)
+### `GET /health`
 
-Simple health check for container orchestration.
+Liveness probe — process is running.
 
-```json
-{ "status": "ok" }
+```text
+ok
+```
+
+### `GET /ready`
+
+Readiness probe — app can serve traffic. Returns `503` when EPCIS templates are missing or `output/` is not writable.
+
+```text
+ok
 ```
 
 ---
