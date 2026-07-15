@@ -245,11 +245,30 @@ function toDigitalLink(sscc: string): string {
 }
 ```
 
-### Environment Variables
+### Environment variables
 
-| Variable | Default (dev) | Description |
-|----------|---------------|-------------|
-| `VITE_API_BASE_URL` | `http://localhost:8000` | Backend API base URL |
+Vite loads env files by mode:
+
+| Mode | Command | Env file |
+|------|---------|----------|
+| `development` | `npm run dev` | `.env.development` |
+| `production` | `npm run build` | `.env.production` |
+
+Use `import.meta.env.VITE_*` in code, or import from `src/config/env.ts`:
+
+```typescript
+import { env } from '@/config/env'
+
+fetch(`${env.backendBaseUrl}/trigger/ausgang-hersteller`, { method: 'POST', ... })
+```
+
+| Variable | Development | Production |
+|----------|-------------|------------|
+| `VITE_BACKEND_BASE_URL` | `http://localhost:8080/api` | `https://demonstrator.example.com/api` |
+
+Local overrides: `.env.local` or `.env.development.local` (gitignored).
+
+Docker dev uses the bind-mounted `.env.development` — do not duplicate vars in `docker-compose.yaml`.
 
 ---
 
@@ -401,8 +420,6 @@ services:
     volumes:
       - ./frontend:/frontend
       - /frontend/node_modules
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8000
 
 volumes:
   backend-data:
