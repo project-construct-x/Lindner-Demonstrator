@@ -6,6 +6,7 @@
   import {
     createEventSession,
     createStepContext,
+    formatEventTimeZoneOffset,
     type EventSession,
   } from '@/utils/epcis-session'
   import constructXLogo from '@/assets/cx.jpg'
@@ -21,6 +22,29 @@
   const snackbar = ref(false)
   const snackbarText = ref('')
   const snackbarColor = ref<'success' | 'error'>('success')
+  const infoDialogOpen = ref(false)
+
+  const sessionInfoRows = computed(() => {
+    if (!eventSession.value) {
+      return []
+    }
+
+    const session = eventSession.value
+    return [
+      { label: 'SSCC', value: session.sscc },
+      { label: 'LGTIN 1', value: session.lgtin1 },
+      { label: 'LGTIN 2', value: session.lgtin2 },
+      { label: 'Despatch Advice', value: session.desadv },
+      { label: 'Purchase Order', value: session.po },
+      { label: 'Zeitzone', value: formatEventTimeZoneOffset(new Date()) },
+    ]
+  })
+
+  const completedStepLabels = computed(() =>
+    LIFECYCLE_STEPS
+      .filter(step => executedSteps.value.has(step.id))
+      .map(step => `${getStepNumber(step.id)}. ${step.label}`),
+  )
 
   const nextStepIndex = computed(() =>
     LIFECYCLE_STEPS.findIndex(step => !executedSteps.value.has(step.id)),
@@ -130,26 +154,7 @@
       </div>
 
       <div class="demo__hero-aside">
-        <div class="demo__progress-card">
-          <div class="demo__progress-label">
-            <span>Fortschritt</span>
-            <span class="demo__progress-value">{{ executedSteps.size }} / {{ LIFECYCLE_STEPS.length }}</span>
-          </div>
-          <v-progress-linear
-            class="demo__progress-bar"
-            :color="allStepsCompleted ? 'success' : 'primary'"
-            height="8"
-            :model-value="progressPercent"
-            rounded
-          />
-          <span v-if="allStepsCompleted" class="demo__progress-done">
-            <v-icon icon="mdi-check-decagram" size="16" />
-            Alle Schritte abgeschlossen
-          </span>
-        </div>
-
         <v-btn
-          block
           class="demo__api-btn"
           color="primary"
           :href="swaggerUrl"
@@ -158,7 +163,7 @@
           rounded="lg"
           size="small"
           target="_blank"
-          variant="outlined"
+          variant="tonal"
         >
           Swagger API
         </v-btn>
@@ -194,28 +199,61 @@
           readonly
           variant="outlined"
         />
-        <v-btn
-          class="sscc-card__btn"
-          color="primary"
-          prepend-icon="mdi-refresh"
-          rounded="lg"
-          size="large"
-          variant="flat"
-          @click="resetSession"
-        >
-          Neue SSCC generieren
-        </v-btn>
+        <div class="sscc-card__actions">
+          <v-btn
+            class="sscc-card__btn"
+            color="primary"
+            prepend-icon="mdi-refresh"
+            rounded="lg"
+            size="large"
+            variant="flat"
+            @click="resetSession"
+          >
+            Neu generieren
+          </v-btn>
+          <v-btn
+            class="sscc-card__btn sscc-card__btn--info"
+            color="primary"
+            prepend-icon="mdi-information-outline"
+            rounded="lg"
+            size="large"
+            variant="tonal"
+            @click="infoDialogOpen = true"
+          >
+            Verwendete Daten Anzeigen
+          </v-btn>
+        </div>
       </div>
     </section>
 
     <section class="steps-section">
       <div class="steps-section__header">
-        <h2 class="steps-section__title">
-          Prozessschritte
-        </h2>
-        <p class="steps-section__hint">
-          Schritte müssen der Reihe nach ausgeführt werden.
-        </p>
+        <div class="steps-section__heading">
+          <h2 class="steps-section__title">
+            Prozessschritte
+          </h2>
+          <p class="steps-section__hint">
+            Schritte müssen der Reihe nach ausgeführt werden.
+          </p>
+        </div>
+
+        <div class="demo__progress-card">
+          <div class="demo__progress-label">
+            <span>Fortschritt</span>
+            <span class="demo__progress-value">{{ executedSteps.size }} / {{ LIFECYCLE_STEPS.length }}</span>
+          </div>
+          <v-progress-linear
+            class="demo__progress-bar"
+            :color="allStepsCompleted ? 'success' : 'primary'"
+            height="8"
+            :model-value="progressPercent"
+            rounded
+          />
+          <span v-if="allStepsCompleted" class="demo__progress-done">
+            <v-icon icon="mdi-check-decagram" size="16" />
+            Alle Schritte abgeschlossen
+          </span>
+        </div>
       </div>
 
       <div
@@ -302,6 +340,70 @@
       </div>
     </section>
 
+    <v-dialog
+      v-model="infoDialogOpen"
+      max-width="640"
+      scrollable
+    >
+      <v-card class="info-dialog" rounded="lg">
+        <v-card-title class="info-dialog__title">
+          <v-icon class="mr-2" icon="mdi-information-outline" />
+          Aktuelle Sitzungsdaten
+        </v-card-title>
+
+        <v-card-text class="info-dialog__content">
+          <div
+            v-for="row in sessionInfoRows"
+            :key="row.label"
+            class="info-dialog__row"
+          >
+            <span class="info-dialog__label">{{ row.label }}</span>
+            <code class="info-dialog__value">{{ row.value }}</code>
+          </div>
+
+          <div class="info-dialog__row">
+            <span class="info-dialog__label">Fortschritt</span>
+            <span class="info-dialog__value info-dialog__value--text">
+              {{ executedSteps.size }} / {{ LIFECYCLE_STEPS.length }} Schritte
+            </span>
+          </div>
+
+          <div class="info-dialog__row info-dialog__row--stacked">
+            <span class="info-dialog__label">Abgeschlossene Schritte</span>
+            <span
+              v-if="completedStepLabels.length === 0"
+              class="info-dialog__value info-dialog__value--text info-dialog__value--muted"
+            >
+              Noch keine Schritte ausgeführt
+            </span>
+            <ul
+              v-else
+              class="info-dialog__steps"
+            >
+              <li
+                v-for="stepLabel in completedStepLabels"
+                :key="stepLabel"
+              >
+                {{ stepLabel }}
+              </li>
+            </ul>
+          </div>
+        </v-card-text>
+
+        <v-card-actions class="info-dialog__actions">
+          <v-spacer />
+          <v-btn
+            color="primary"
+            rounded="lg"
+            variant="flat"
+            @click="infoDialogOpen = false"
+          >
+            Schließen
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar
       v-model="snackbar"
       class="demo-snackbar"
@@ -324,7 +426,7 @@
 }
 
 .demo__hero {
-  align-items: center;
+  align-items: flex-start;
   display: flex;
   gap: 24px;
   justify-content: space-between;
@@ -382,16 +484,15 @@
 }
 
 .demo__api-btn {
+  align-self: flex-end;
   text-transform: none;
 }
 
 .demo__hero-aside {
-  align-self: center;
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  gap: 10px;
-  min-width: 220px;
 }
 
 .demo__progress-card {
@@ -399,7 +500,10 @@
   background: rgba(17, 24, 39, 0.7);
   border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 16px;
+  flex-shrink: 0;
+  min-width: 220px;
   padding: 16px 20px;
+  width: 260px;
 }
 
 .demo__progress-label {
@@ -462,7 +566,7 @@
   flex: 1;
   flex-direction: column;
   gap: 14px;
-  max-width: 420px;
+  max-width: 600px;
   min-width: 0;
 }
 
@@ -500,17 +604,37 @@
   letter-spacing: 0.01em;
 }
 
+.sscc-card__actions {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+  width: 100%;
+}
+
 .sscc-card__btn {
-  align-self: flex-start;
   box-shadow: 0 4px 16px rgba(51, 122, 183, 0.22);
+  flex: 1;
   font-weight: 600;
   letter-spacing: 0.02em;
-  min-width: 220px;
+  min-width: 0;
   text-transform: none;
 }
 
+.sscc-card__btn--info {
+  box-shadow: none;
+}
+
 .steps-section__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
   margin-bottom: 24px;
+}
+
+.steps-section__heading {
+  min-width: 0;
 }
 
 .steps-section__title {
@@ -518,6 +642,7 @@
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.01em;
+  margin: 0;
 }
 
 .steps-section__hint {
@@ -754,8 +879,21 @@
     width: 100%;
   }
 
+  .sscc-card__actions {
+    width: 100%;
+  }
+
   .sscc-card__btn {
+    flex: 1;
     min-width: 0;
+  }
+
+  .steps-section__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .demo__progress-card {
     width: 100%;
   }
 
@@ -763,6 +901,86 @@
     grid-template-columns: repeat(var(--step-count), minmax(200px, 260px));
     overflow-x: auto;
     padding-bottom: 8px;
+  }
+}
+
+.info-dialog {
+  background: #111827;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.info-dialog__title {
+  color: #f1f5f9;
+  font-size: 1.125rem;
+  font-weight: 700;
+  padding: 20px 24px 12px;
+}
+
+.info-dialog__content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px 24px 20px;
+}
+
+.info-dialog__row {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 140px minmax(0, 1fr);
+}
+
+.info-dialog__row--stacked {
+  grid-template-columns: 1fr;
+}
+
+.info-dialog__label {
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.info-dialog__value {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 8px;
+  color: #5a9fd4;
+  display: block;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
+  word-break: break-word;
+}
+
+.info-dialog__value--text {
+  background: transparent;
+  border: 0;
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.info-dialog__value--muted {
+  color: #64748b;
+}
+
+.info-dialog__steps {
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.info-dialog__actions {
+  padding: 12px 24px 20px;
+}
+
+@media (max-width: 600px) {
+  .info-dialog__row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

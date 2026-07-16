@@ -171,7 +171,7 @@ def generate_step_events(
         events.append(_render_event(template_file, session, event_context))
 
     document = build_epcis_document(events, triggered_at)
-    document_file = sscc_dir / f"{step.id}.json"
+    document_file = sscc_dir / f"{step.number}.json"
     _persist_document(document, document_file)
 
     logger.info(
