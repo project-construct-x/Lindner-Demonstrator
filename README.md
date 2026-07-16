@@ -9,7 +9,7 @@ The Vue frontend generates a session with SSCC, LGTINs, and business transaction
 3. Persist the document to `backend/output/{sscc}/`
 4. POST the document to the EPCAT2 capture endpoint
 
-## Quick start
+## Development
 
 **Prerequisites:** Docker and Docker Compose
 
@@ -17,10 +17,10 @@ The Vue frontend generates a session with SSCC, LGTINs, and business transaction
 docker compose up --build
 ```
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8000 |
+| Service            | URL                        |
+| ------------------ | -------------------------- |
+| Frontend           | http://localhost:3000      |
+| Backend API        | http://localhost:8000      |
 | API docs (Swagger) | http://localhost:8000/docs |
 
 Source is bind-mounted — changes reload without rebuilding containers.
