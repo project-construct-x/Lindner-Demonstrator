@@ -1,12 +1,12 @@
 import logging
 
 import httpx
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import APIRouter, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
 from epcis.generator import generate_step_events
-from epcis.steps import get_step
+from epcis.steps import get_step_by_number
 from health import check_readiness
 from models import TriggerRequest, TriggerResponse
 
@@ -17,6 +17,8 @@ logging.basicConfig(level=settings.log_level.upper())
 app = FastAPI(
     title="Construct-X Demonstrator API",
     description="Generates EPCIS events from templates for GS1 SSCC lifecycle steps.",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json",
 )
 
 app.add_middleware(
@@ -26,6 +28,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+api = APIRouter(prefix="/api")
 
 
 @app.get("/health")
@@ -45,11 +49,11 @@ def ready() -> Response:
     return Response(content="ok\n", media_type="text/plain")
 
 
-@app.post("/trigger/{step_id}", response_model=TriggerResponse)
-def trigger(step_id: str, body: TriggerRequest) -> TriggerResponse:
-    step = get_step(step_id)
+@api.post("/trigger/{step_number}", response_model=TriggerResponse)
+def trigger(step_number: int, body: TriggerRequest) -> TriggerResponse:
+    step = get_step_by_number(step_number)
     if step is None:
-        raise HTTPException(status_code=404, detail=f"Unknown step: {step_id}")
+        raise HTTPException(status_code=404, detail=f"Unknown step: {step_number}")
 
     try:
         document, document_file = generate_step_events(step, body.session, body.step)
@@ -76,3 +80,6 @@ def trigger(step_id: str, body: TriggerRequest) -> TriggerResponse:
         document_file=document_file.name,
         event_count=len(document["epcisBody"]["eventList"]),
     )
+
+
+app.include_router(api)

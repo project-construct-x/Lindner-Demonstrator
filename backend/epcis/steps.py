@@ -57,3 +57,12 @@ STEPS: dict[str, Step] = {
 
 def get_step(step_id: str) -> Step | None:
     return STEPS.get(step_id)
+
+
+def get_step_by_number(step_number: int) -> Step | None:
+    if step_number < 1 or step_number > 7:
+        return None
+    for step in STEPS.values():
+        if step.number == step_number:
+            return step
+    return None

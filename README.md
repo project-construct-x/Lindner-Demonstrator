@@ -17,11 +17,12 @@ The Vue frontend generates a session with SSCC, LGTINs, and business transaction
 docker compose up --build
 ```
 
-| Service            | URL                        |
-| ------------------ | -------------------------- |
-| Frontend           | http://localhost:3000      |
-| Backend API        | http://localhost:8000      |
-| API docs (Swagger) | http://localhost:8000/docs |
+| Service            | URL |
+| ------------------ | --- |
+| Frontend           | http://localhost:3000 |
+| Backend API        | http://localhost:8000/api |
+| Trigger endpoint   | `POST http://localhost:8000/api/trigger/<1-7>` |
+| API docs (Swagger) | http://localhost:8000/api/docs |
 
 Source is bind-mounted — changes reload without rebuilding containers.
 
@@ -39,6 +40,25 @@ docker build -t demonstrator-frontend ./frontend
 ```
 
 Set `EPCAT_BASE_URL` in `backend/.env.production` before deploying the backend.
+
+### Reverse proxy
+
+In production, a reverse proxy must route traffic by path:
+
+| Path | Target |
+|------|--------|
+| `/api/**` | Backend (FastAPI) — includes `POST /api/trigger/<1-7>` and Swagger at `/api/docs` |
+| Everything else | Frontend (static Vue app) |
+
+Example:
+
+```
+https://demonstrator.example.com/              → frontend
+https://demonstrator.example.com/api/trigger/1 → backend
+https://demonstrator.example.com/api/docs      → backend (Swagger)
+```
+
+Set `VITE_BACKEND_BASE_URL=https://demonstrator.example.com/api` in `frontend/.env.production` so the UI calls the proxied API path.
 
 ## Repository layout
 

@@ -45,7 +45,7 @@ sequenceDiagram
     FE->>FE: Generate session (SSCC, LGTINs, DESADV, PO) + QR code
 
     U->>FE: Click next lifecycle step
-    FE->>BE: POST /trigger/{step-id} { session, step }
+    FE->>BE: POST /api/trigger/{1-7} { session, step }
     BE->>BE: Render event template(s) for step
     BE->>BE: Build EPCISDocument from document.json
     BE->>FS: Write output/{sscc}/{1-7}.json
@@ -116,7 +116,7 @@ Frontend step definitions: `frontend/src/constants/steps.ts`
 ### Frontend Button Behaviour
 
 - Only the **next** step in sequence is enabled; completed steps show a checkmark
-- Clicking a step calls `POST /trigger/{step-id}` with the full session and timezone context
+- Clicking a step calls `POST /api/trigger/{1-7}` with the full session and timezone context
 - On success, the step is marked completed and a snackbar shows the document file and event count
 - **Neu generieren** creates a new session, re-renders the QR code, and resets all steps
 - **Verwendete Daten Anzeigen** opens a modal with all session identifiers and progress
@@ -142,7 +142,7 @@ Frontend step definitions: `frontend/src/constants/steps.ts`
 | `src/pages/index.vue` | Main demo page: QR code, step buttons, progress, info modal |
 | `src/utils/epcis-session.ts` | Session generation (SSCC, LGTINs, DESADV, PO) and step context |
 | `src/constants/steps.ts` | Lifecycle step IDs, labels, and images |
-| `src/services/trigger.service.ts` | HTTP client for `POST /trigger/{step-id}` |
+| `src/services/trigger.service.ts` | HTTP client for `POST /api/trigger/{1-7}` |
 | `src/config/env.ts` | Backend base URL from env |
 
 ### Environment variables
@@ -154,7 +154,7 @@ Frontend step definitions: `frontend/src/constants/steps.ts`
 
 | Variable | Development | Production |
 |----------|-------------|------------|
-| `VITE_BACKEND_BASE_URL` | `http://localhost:8000` | `https://demonstrator.example.com/api` |
+| `VITE_BACKEND_BASE_URL` | `http://localhost:8000/api` | `https://demonstrator.example.com/api` |
 
 Use `import { env } from '@/config/env'` in code. Local overrides: `.env.local` or `.env.development.local` (gitignored).
 
@@ -195,7 +195,7 @@ backend/
 
 ### Document Generation Flow
 
-1. Receive `POST /trigger/{step-id}` with `session` and `step` context
+1. Receive `POST /api/trigger/{step-number}` with `session` and `step` context (`step-number` is 1–7)
 2. Validate step ID, session URIs, and timezone offset
 3. For each event template assigned to the step:
    - Load template from `backend/epcis/{template}.json`
@@ -342,11 +342,21 @@ docker build -t demonstrator-frontend ./frontend
 
 ## API Reference
 
-### `POST /trigger/{step-id}`
+### `POST /api/trigger/{step-number}`
 
 Generate an EPCIS document for a lifecycle step, persist it, and send it to EPCAT capture.
 
-**Valid step IDs:** `ausgang-hersteller`, `baustellen-eingang`, `einbau`, `rueckbau`, `ausgang-baustelle`, `eingang-hersteller`, `aufbereitung`
+**URL:** `/api/trigger/{step-number}` where `step-number` is `1`–`7`
+
+| Step | Number |
+|------|--------|
+| Ausgang beim Hersteller | `1` |
+| Baustellen-Eingang | `2` |
+| Einbau | `3` |
+| Rückbau | `4` |
+| Ausgang Baustelle | `5` |
+| Eingang beim Hersteller | `6` |
+| Aufbereitung | `7` |
 
 **Request body:**
 
@@ -380,10 +390,14 @@ Generate an EPCIS document for a lifecycle step, persist it, and send it to EPCA
 
 | Status | Condition |
 |--------|-----------|
-| 404 | Unknown `step-id` or missing template file |
+| 404 | Unknown step number or missing template file |
 | 422 | Invalid session URIs or timezone offset |
 | 502 | EPCAT capture endpoint error or unreachable |
 | 500 | File system error |
+
+### Swagger UI
+
+Interactive API documentation: `http://localhost:8000/api/docs` (dev) or `{backend}/api/docs` (prod).
 
 ### `GET /health`
 

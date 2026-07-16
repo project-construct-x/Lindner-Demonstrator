@@ -111,7 +111,7 @@
       }
 
       const result = await triggerService.triggerStep(
-        stepId,
+        getStepNumber(stepId),
         eventSession.value,
         createStepContext(),
       )

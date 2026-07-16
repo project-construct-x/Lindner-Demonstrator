@@ -15,11 +15,11 @@ class TriggerService extends BaseService {
   }
 
   triggerStep (
-    stepId: string,
+    stepNumber: number,
     session: EventSession,
     step: StepContext,
   ): Promise<TriggerResult> {
-    return this.post<TriggerResult>(`/trigger/${stepId}`, {
+    return this.post<TriggerResult>(`/trigger/${stepNumber}`, {
       session: {
         sscc: session.sscc,
         lgtin1: session.lgtin1,
