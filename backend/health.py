@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from config import EPCIS_TEMPLATES_DIR, get_settings
+from epcis.generator import DOCUMENT_TEMPLATE_PATH
 from epcis.steps import STEPS
 
 
@@ -8,9 +9,14 @@ def check_readiness() -> tuple[bool, list[str]]:
     issues: list[str] = []
     settings = get_settings()
 
+    if not settings.epcat_base_url:
+        issues.append("EPCAT_BASE_URL is not configured")
+
     if not EPCIS_TEMPLATES_DIR.is_dir():
         issues.append(f"EPCIS templates directory missing: {EPCIS_TEMPLATES_DIR}")
     else:
+        if not DOCUMENT_TEMPLATE_PATH.is_file():
+            issues.append(f"Missing EPCIS document template: {DOCUMENT_TEMPLATE_PATH.name}")
         for step in STEPS.values():
             for template_file in step.template_files:
                 template_path = EPCIS_TEMPLATES_DIR / template_file

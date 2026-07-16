@@ -1,5 +1,6 @@
 import logging
 
+import httpx
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -51,16 +52,27 @@ def trigger(step_id: str, body: TriggerRequest) -> TriggerResponse:
         raise HTTPException(status_code=404, detail=f"Unknown step: {step_id}")
 
     try:
-        _, event_files = generate_step_events(step, body.session, body.step)
+        document, document_file = generate_step_events(step, body.session, body.step)
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
+    except httpx.HTTPStatusError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"EPCAT capture endpoint returned {error.response.status_code}",
+        ) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"EPCAT capture endpoint unreachable: {error}",
+        ) from error
     except OSError as error:
         raise HTTPException(status_code=500, detail=str(error)) from error
 
     return TriggerResponse(
         step_id=step.id,
         sscc=body.session.sscc,
-        event_files=[event_file.name for event_file in event_files],
+        document_file=document_file.name,
+        event_count=len(document["epcisBody"]["eventList"]),
     )

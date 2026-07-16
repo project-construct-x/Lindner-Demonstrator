@@ -8,10 +8,13 @@ from pathlib import Path
 from uuid import uuid4
 
 from config import EPCIS_TEMPLATES_DIR, EVENTS_DIR
+from epcis.capture import send_to_capture
 from epcis.steps import Step
 from models import EventSession, StepContext
 
 logger = logging.getLogger(__name__)
+
+DOCUMENT_TEMPLATE_PATH = EPCIS_TEMPLATES_DIR / "document.json"
 
 SSCC_URI_PATTERN = re.compile(r"^https://id\.gs1\.org/00/\d{18}$")
 EVENT_TIMEZONE_PATTERN = re.compile(r"^[+-]\d{2}:\d{2}$")
@@ -110,52 +113,53 @@ def render_template(template_path: Path, variables: dict[str, str]) -> dict:
     return event
 
 
-def _generate_single_event(
+def _render_event(
     template_file: str,
     session: EventSession,
     event_context: _RenderedEventContext,
-    step_id: str,
-    sscc_dir: Path,
-) -> tuple[dict, Path]:
+) -> dict:
     template_path = EPCIS_TEMPLATES_DIR / template_file
     if not template_path.is_file():
         raise FileNotFoundError(f"Template not found: {template_file}")
 
     variables = _template_variables(session, event_context)
-    event = render_template(template_path, variables)
+    return render_template(template_path, variables)
 
-    event_name = template_path.stem
-    event_file = sscc_dir / f"{event_name}.json"
-    with event_file.open("w", encoding="utf-8") as output_file:
-        json.dump(event, output_file, indent=2, ensure_ascii=False)
-        output_file.write("\n")
 
-    logger.info(
-        "Generated EPCIS event for step=%s sscc=%s file=%s\n%s",
-        step_id,
-        session.sscc,
-        event_file,
-        json.dumps(event, indent=2, ensure_ascii=False),
+def build_epcis_document(events: list[dict], created_at: datetime) -> dict:
+    if not DOCUMENT_TEMPLATE_PATH.is_file():
+        raise FileNotFoundError(
+            f"EPCIS document template not found: {DOCUMENT_TEMPLATE_PATH.name}"
+        )
+
+    document = render_template(
+        DOCUMENT_TEMPLATE_PATH,
+        {"creationDate": _format_event_time(created_at)},
     )
+    document["epcisBody"]["eventList"] = events
+    return document
 
-    return event, event_file
+
+def _persist_document(document: dict, document_file: Path) -> None:
+    with document_file.open("w", encoding="utf-8") as output_file:
+        json.dump(document, output_file, indent=2, ensure_ascii=False)
+        output_file.write("\n")
 
 
 def generate_step_events(
     step: Step,
     session: EventSession,
     step_context: StepContext,
-) -> tuple[list[dict], list[Path]]:
+) -> tuple[dict, Path]:
     validate_session(session)
     validate_step_context(step_context)
 
     sscc_dir = EVENTS_DIR / sscc_folder_name(session.sscc)
     sscc_dir.mkdir(parents=True, exist_ok=True)
 
-    events: list[dict] = []
-    event_files: list[Path] = []
     template_count = len(step.template_files)
     triggered_at = datetime.now(timezone.utc)
+    events: list[dict] = []
 
     for index, template_file in enumerate(step.template_files):
         event_context = _event_context_for_template(
@@ -164,14 +168,21 @@ def generate_step_events(
             template_count,
             triggered_at,
         )
-        event, event_file = _generate_single_event(
-            template_file,
-            session,
-            event_context,
-            step.id,
-            sscc_dir,
-        )
-        events.append(event)
-        event_files.append(event_file)
+        events.append(_render_event(template_file, session, event_context))
 
-    return events, event_files
+    document = build_epcis_document(events, triggered_at)
+    document_file = sscc_dir / f"{step.id}.json"
+    _persist_document(document, document_file)
+
+    logger.info(
+        "Generated EPCIS document for step=%s sscc=%s file=%s events=%d\n%s",
+        step.id,
+        session.sscc,
+        document_file,
+        len(events),
+        json.dumps(document, indent=2, ensure_ascii=False),
+    )
+
+    send_to_capture(document)
+
+    return document, document_file

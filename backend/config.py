@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     output_dir: Path = Field(default=Path("output"))
     log_level: str = "INFO"
     cors_origins: str = "*"
+    epcat_base_url: str = ""
 
     model_config = SettingsConfigDict(
         env_file_encoding="utf-8",

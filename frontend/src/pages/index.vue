@@ -92,7 +92,10 @@
         createStepContext(),
       )
       executedSteps.value = new Set([...executedSteps.value, stepId])
-      notify(`${label}: ${result.event_files.join(', ')} erzeugt`, 'success')
+      notify(
+        `${label}: ${result.document_file} erzeugt (${result.event_count} Events)`,
+        'success',
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler'
       notify(message, 'error')
