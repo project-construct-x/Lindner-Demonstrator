@@ -41,7 +41,7 @@ services:
       start_period: 30s
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.backend.rule=Host(`132.195.160.160`) && (PathPrefix(`/api`) || PathPrefix(`/trigger`)"
+      - "traefik.http.routers.backend.rule=Host(`132.195.160.160`) && PathPrefix(`/api`)"
       - traefik.http.routers.backend.entrypoints=websecure
       - traefik.http.routers.backend.tls=true
       - traefik.http.routers.backend.tls.certresolver=letsencrypt
