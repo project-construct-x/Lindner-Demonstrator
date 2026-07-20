@@ -18,6 +18,8 @@ RUN npm run build-only
 # -----------------------------------------------------------------------------
 FROM nginx:alpine AS production
 
+RUN apk add --no-cache curl
+
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /frontend/dist /usr/share/nginx/html
 
