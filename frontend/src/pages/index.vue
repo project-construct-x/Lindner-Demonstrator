@@ -1,16 +1,16 @@
 <script lang="ts" setup>
-  import { computed, onMounted, ref, useId } from 'vue'
   import QrcodeVue from 'qrcode.vue'
-  import { triggerService } from '@/services/trigger.service'
+  import { computed, onMounted, ref, useId } from 'vue'
+  import constructXLogo from '@/assets/cx.jpg'
+  import { env } from '@/config/env'
   import { LIFECYCLE_STEPS, LIFECYCLE_STORIES } from '@/constants/steps'
+  import { triggerService } from '@/services/trigger.service'
   import {
     createEventSession,
     createStepContext,
-    formatEventTimeZoneOffset,
     type EventSession,
+    formatEventTimeZoneOffset,
   } from '@/utils/epcis-session'
-  import constructXLogo from '@/assets/cx.jpg'
-  import { env } from '@/config/env'
 
   const swaggerUrl = `${env.backendBaseUrl}/docs`
 
@@ -148,6 +148,7 @@
             Construct-X Demonstrator
           </h1>
         </div>
+
         <p class="demo__subtitle">
           Simuliere den Materiallebenszyklus per QR-Code-Scan — von der Fertigung bis zur Aufbereitung.
         </p>
@@ -181,11 +182,11 @@
           gradient-end-color="#5a9fd4"
           gradient-start-color="#f8fafc"
           gradient-type="linear"
+          level="M"
           :radius="0"
+          render-as="svg"
           :size="132"
           :value="digitalLink"
-          level="M"
-          render-as="svg"
         />
       </div>
 
@@ -199,6 +200,7 @@
           readonly
           variant="outlined"
         />
+
         <div class="sscc-card__actions">
           <v-btn
             class="sscc-card__btn"
@@ -211,6 +213,7 @@
           >
             Neu generieren
           </v-btn>
+
           <v-btn
             class="sscc-card__btn sscc-card__btn--info"
             color="primary"
@@ -232,6 +235,7 @@
           <h2 class="steps-section__title">
             Prozessschritte
           </h2>
+
           <p class="steps-section__hint">
             Schritte müssen der Reihe nach ausgeführt werden.
           </p>
@@ -242,6 +246,7 @@
             <span>Fortschritt</span>
             <span class="demo__progress-value">{{ executedSteps.size }} / {{ LIFECYCLE_STEPS.length }}</span>
           </div>
+
           <v-progress-linear
             class="demo__progress-bar"
             :color="allStepsCompleted ? 'success' : 'primary'"
@@ -249,6 +254,7 @@
             :model-value="progressPercent"
             rounded
           />
+
           <span v-if="allStepsCompleted" class="demo__progress-done">
             <v-icon icon="mdi-check-decagram" size="16" />
             Alle Schritte abgeschlossen
@@ -276,8 +282,10 @@
             />
             {{ story.title }}
           </div>
+
           <div class="story-section__meta">
             <span class="story-section__range">Schritt {{ storyIndex === 0 ? '1–3' : '4–7' }}</span>
+
             <v-chip
               v-if="isStoryCompleted(storyIndex)"
               color="success"
@@ -287,6 +295,7 @@
             >
               Abgeschlossen
             </v-chip>
+
             <span v-else class="story-section__percent">{{ storyProgress(storyIndex) }}%</span>
           </div>
         </div>
@@ -309,6 +318,7 @@
             @click="handleStep(step.id, step.label)"
           >
             <div class="step-button__glow" />
+
             <div class="step-button__icon">
               <v-img
                 :alt="step.label"
@@ -316,6 +326,7 @@
                 cover
                 :src="step.image"
               />
+
               <v-progress-circular
                 v-if="loadingStep === step.id"
                 class="step-button__status"
@@ -324,6 +335,7 @@
                 size="26"
                 width="2"
               />
+
               <v-icon
                 v-else-if="isStepCompleted(step.id)"
                 class="step-button__status step-button__status--done"
@@ -331,6 +343,7 @@
                 size="22"
               />
             </div>
+
             <div class="step-button__content">
               <span class="step-button__number">{{ getStepNumber(step.id) }}</span>
               <span class="step-button__label">{{ step.label }}</span>
@@ -363,6 +376,7 @@
 
           <div class="info-dialog__row">
             <span class="info-dialog__label">Fortschritt</span>
+
             <span class="info-dialog__value info-dialog__value--text">
               {{ executedSteps.size }} / {{ LIFECYCLE_STEPS.length }} Schritte
             </span>
@@ -370,12 +384,14 @@
 
           <div class="info-dialog__row info-dialog__row--stacked">
             <span class="info-dialog__label">Abgeschlossene Schritte</span>
+
             <span
               v-if="completedStepLabels.length === 0"
               class="info-dialog__value info-dialog__value--text info-dialog__value--muted"
             >
               Noch keine Schritte ausgeführt
             </span>
+
             <ul
               v-else
               class="info-dialog__steps"
@@ -392,6 +408,7 @@
 
         <v-card-actions class="info-dialog__actions">
           <v-spacer />
+
           <v-btn
             color="primary"
             rounded="lg"

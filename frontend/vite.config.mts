@@ -1,5 +1,5 @@
-import { fileURLToPath, URL } from 'node:url'
 import type { Plugin } from 'vite'
+import { fileURLToPath, URL } from 'node:url'
 import Vue from '@vitejs/plugin-vue'
 import Fonts from 'unplugin-fonts/vite'
 import { defineConfig } from 'vite'

@@ -1,6 +1,7 @@
 <template>
   <v-app class="app-shell">
     <div class="app-shell__bg" />
+
     <v-main class="app-shell__main">
       <router-view />
     </v-main>

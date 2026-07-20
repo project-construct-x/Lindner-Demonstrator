@@ -26,10 +26,10 @@ export class BaseService {
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
-        ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         ...headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : JSON.stringify(body),
     })
 
     if (!response.ok) {

@@ -1,6 +1,6 @@
+import type { EventSession, StepContext } from '@/utils/epcis-session'
 import { env } from '@/config/env'
 import { BaseService } from '@/services/base'
-import type { EventSession, StepContext } from '@/utils/epcis-session'
 
 export interface TriggerResult {
   step_id: string
