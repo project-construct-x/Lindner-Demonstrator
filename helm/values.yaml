@@ -1,0 +1,55 @@
+# Demonstrator Helm Chart - Default Values
+
+nameOverride: ""
+fullnameOverride: ""
+
+imagePullSecrets: []
+
+backend:
+  image:
+    repository: ghcr.io/project-construct-x/blaupause-demonstrator-dev-setup/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    storageClass: longhorn
+    mountPath: /backend/output
+  env:
+    logLevel: INFO
+    epcatBaseUrl: https://epcat2.construct-x.prod-k8s.eecc.de/api
+  corsOrigins: ""
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+frontend:
+  image:
+    repository: ghcr.io/project-construct-x/blaupause-demonstrator-dev-setup/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: prod-eecc
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+  tlsSecretName: ""
+
+hosts:
+  - demonstrator.example.com
