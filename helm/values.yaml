@@ -55,3 +55,21 @@ ingress:
 
 hosts:
   - demonstrator.example.com
+
+# Poll GHCR for new :latest digests and rollout-restart deployments when changed.
+# Single public image with kubectl + curl + shell (no extra registry auth needed).
+imageWatcher:
+  enabled: false
+  intervalSeconds: 3
+  pullSecretName: ""
+  scriptVersion: "1"
+  image:
+    repository: alpine/k8s
+    tag: "1.31.4"
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 64Mi

@@ -1,0 +1,222 @@
+{{- if .Values.imageWatcher.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-image-watcher
+  labels:
+    app: demonstrator
+    component: image-watcher
+    release: {{ .Release.Name }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Release.Name }}-image-watcher
+  labels:
+    app: demonstrator
+    component: image-watcher
+    release: {{ .Release.Name }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Release.Name }}-image-watcher
+  labels:
+    app: demonstrator
+    component: image-watcher
+    release: {{ .Release.Name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Release.Name }}-image-watcher
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-image-watcher
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-image-watcher
+  labels:
+    app: demonstrator
+    component: image-watcher
+    release: {{ .Release.Name }}
+data:
+  watch.sh: |
+    #!/bin/sh
+    set -eu
+
+    INTERVAL="${INTERVAL_SECONDS:-10}"
+
+    log() {
+      echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") [image-watcher] $*" >&2
+    }
+
+    ghcr_auth() {
+      sed -n 's/.*"auth"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' /registry/config.json | head -1
+    }
+
+    get_registry_digest() {
+      repository="$1"
+      tag="$2"
+      repo_path="${repository#ghcr.io/}"
+
+      auth="$(ghcr_auth)"
+      if [ -z "$auth" ]; then
+        log "ERROR: missing ghcr.io credentials in pull secret"
+        return 1
+      fi
+
+      user="$(printf '%s' "$auth" | base64 -d 2>/dev/null | cut -d: -f1)"
+      password="$(printf '%s' "$auth" | base64 -d 2>/dev/null | cut -d: -f2-)"
+
+      token="$(
+        curl -s -u "${user}:${password}" \
+          "https://ghcr.io/token?service=ghcr.io&scope=repository:${repo_path}:pull" \
+          | sed -n 's/.*"token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+      )"
+      if [ -z "$token" ]; then
+        log "ERROR: could not fetch GHCR token for ${repository}"
+        return 1
+      fi
+
+      digest="$(
+        curl -s -D - -o /dev/null \
+          -H "Authorization: Bearer ${token}" \
+          -H "Accept: application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.oci.image.index.v1+json" \
+          "https://ghcr.io/v2/${repo_path}/manifests/${tag}" \
+          | awk -F': ' 'tolower($1)=="docker-content-digest" {print $2; exit}' \
+          | tr -d '\r'
+      )"
+
+      if [ -z "$digest" ]; then
+        log "ERROR: could not resolve digest for ${repository}:${tag}"
+        return 1
+      fi
+
+      printf '%s\n' "$digest"
+    }
+
+    restart_deployment() {
+      deployment="$1"
+      log "New image detected, restarting deployment/${deployment}"
+      kubectl rollout restart "deployment/${deployment}"
+    }
+
+    check_target() {
+      deployment="$1"
+      repository="$2"
+      tag="$3"
+      state_file="/state/${deployment}.digest"
+
+      if ! registry_digest="$(get_registry_digest "$repository" "$tag")"; then
+        log "WARN: skipping ${deployment}, registry check failed"
+        return 0
+      fi
+
+      if [ ! -f "$state_file" ]; then
+        printf '%s' "$registry_digest" > "$state_file"
+        log "${deployment}: initial digest ${registry_digest}"
+        return 0
+      fi
+
+      known_digest="$(cat "$state_file")"
+      if [ "$registry_digest" = "$known_digest" ]; then
+        return 0
+      fi
+
+      log "${deployment}: digest changed ${known_digest} -> ${registry_digest}"
+      restart_deployment "$deployment"
+      printf '%s' "$registry_digest" > "$state_file"
+    }
+
+    log "Starting image watcher (interval=${INTERVAL}s)"
+    while true; do
+      check_target \
+        "{{ .Release.Name }}-backend" \
+        "{{ .Values.backend.image.repository }}" \
+        "{{ .Values.backend.image.tag }}" \
+        || log "WARN: backend check failed"
+
+      check_target \
+        "{{ .Release.Name }}-frontend" \
+        "{{ .Values.frontend.image.repository }}" \
+        "{{ .Values.frontend.image.tag }}" \
+        || log "WARN: frontend check failed"
+
+      sleep "$INTERVAL"
+    done
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-image-watcher
+  labels:
+    app: demonstrator
+    component: image-watcher
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: demonstrator
+      component: image-watcher
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: demonstrator
+        component: image-watcher
+        release: {{ .Release.Name }}
+      annotations:
+        cx.construct-x.dev/image-watcher-script-version: {{ .Values.imageWatcher.scriptVersion | quote }}
+    spec:
+      serviceAccountName: {{ .Release.Name }}-image-watcher
+      enableServiceLinks: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: watcher
+          image: "{{ .Values.imageWatcher.image.repository }}:{{ .Values.imageWatcher.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "/config/watch.sh"]
+          env:
+            - name: INTERVAL_SECONDS
+              value: {{ .Values.imageWatcher.intervalSeconds | quote }}
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: registry-auth
+              mountPath: /registry
+              readOnly: true
+            - name: state
+              mountPath: /state
+          resources:
+            {{- toYaml .Values.imageWatcher.resources | nindent 12 }}
+      volumes:
+        - name: state
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-image-watcher
+            defaultMode: 0755
+        - name: registry-auth
+          secret:
+            secretName: {{ .Values.imageWatcher.pullSecretName | default (index .Values.imagePullSecrets 0 "name") | default "cx-registry-pull-secret" }}
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+{{- end }}

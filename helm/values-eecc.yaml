@@ -19,3 +19,9 @@ backend:
 frontend:
   image:
     pullPolicy: Always
+
+imageWatcher:
+  enabled: true
+  intervalSeconds: 3
+  pullSecretName: *imagePullSecret
+  scriptVersion: "2"
