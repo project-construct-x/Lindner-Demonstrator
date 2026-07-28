@@ -3,6 +3,8 @@
 nameOverride: ""
 fullnameOverride: ""
 
+# Existing image pull secret for GHCR (see setup-pull-secret.sh)
+# EECC prod uses cx-registry-pull-secret from values-eecc.yaml
 imagePullSecrets: []
 
 backend:

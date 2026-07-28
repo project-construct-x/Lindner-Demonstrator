@@ -65,6 +65,11 @@ check_prerequisites() {
         exit 1
     fi
 
+    if ! kubectl --context "$KUBE_CONTEXT" get secret cx-registry-pull-secret -n "$NAMESPACE" &> /dev/null; then
+        print_warning "Pull secret 'cx-registry-pull-secret' not found in namespace '$NAMESPACE'"
+        print_warning "Run ./setup-pull-secret.sh first (same credentials as edc/helm/edc)"
+    fi
+
     print_success "Prerequisites check passed"
 }
 

@@ -1,9 +1,21 @@
-# Demonstrator Helm Chart - Construct-X prod cluster
+# Demonstrator Helm Chart - EECC prod cluster
+
+shared:
+  imagePullSecret: &imagePullSecret cx-registry-pull-secret
+
+imagePullSecrets:
+  - name: *imagePullSecret
 
 hosts:
   - demonstrator.construct-x.prod-k8s.eecc.de
 
 backend:
   corsOrigins: https://demonstrator.construct-x.prod-k8s.eecc.de
+  image:
+    pullPolicy: Always
   persistence:
     storageClass: longhorn
+
+frontend:
+  image:
+    pullPolicy: Always
