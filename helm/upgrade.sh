@@ -6,7 +6,7 @@ set -e
 
 KUBE_CONTEXT="eecc-prod"
 NAMESPACE="cx-uc-demonstrator"
-VALUES_FILE="values-construct-x.yaml"
+VALUES_FILE="values-eecc.yaml"
 RELEASE_NAME="demonstrator"
 
 RED='\033[0;31m'
