@@ -22,7 +22,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     APP_ENV=production
 
 COPY --from=builder /install /usr/local
-COPY main.py config.py models.py health.py .env.production ./
+COPY main.py config.py models.py health.py subscriptions.py .env.production ./
 COPY epcis/ epcis/
 
 EXPOSE 8000
