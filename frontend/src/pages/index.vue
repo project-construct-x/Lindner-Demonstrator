@@ -1,10 +1,14 @@
 <script lang="ts" setup>
   import QrcodeVue from 'qrcode.vue'
-  import { computed, onMounted, ref, useId } from 'vue'
+  import { computed, onMounted, onUnmounted, ref, useId, watch } from 'vue'
   import constructXLogo from '@/assets/cx.jpg'
   import QrScannerDialog from '@/components/QrScannerDialog.vue'
   import { env } from '@/config/env'
   import { LIFECYCLE_STEPS, LIFECYCLE_STORIES } from '@/constants/steps'
+  import {
+    ssccSubscriptionService,
+    type StepCompletedEvent,
+  } from '@/services/sscc-subscription.service'
   import { triggerService } from '@/services/trigger.service'
   import { debugError, debugLog } from '@/utils/debug'
   import {
@@ -59,11 +63,51 @@
     return Math.round((done / story.steps.length) * 100)
   }
 
+  function applyExecutedSteps (stepIds: string[]) {
+    executedSteps.value = new Set(stepIds)
+  }
+
+  function handleSubscriptionSnapshot (completedStepIds: string[]) {
+    applyExecutedSteps(completedStepIds)
+  }
+
+  function handleSubscriptionStepCompleted (event: StepCompletedEvent) {
+    applyExecutedSteps(event.completed_step_ids)
+
+    if (loadingStep.value === event.step_id) {
+      return
+    }
+
+    notify(
+      `${event.step_label}: ${event.document_file} erzeugt (${event.event_count} Events)`,
+      'success',
+    )
+  }
+
+  function subscribeToCurrentSscc () {
+    const sscc = eventSession.value?.sscc
+    ssccSubscriptionService.unsubscribe()
+
+    if (!sscc) {
+      return
+    }
+
+    ssccSubscriptionService.subscribe(sscc, {
+      onSnapshot: snapshot => handleSubscriptionSnapshot(snapshot.completed_step_ids),
+      onStepCompleted: handleSubscriptionStepCompleted,
+    })
+  }
+
+  watch(() => eventSession.value?.sscc, () => {
+    applyExecutedSteps([])
+    loadingStep.value = null
+    subscribeToCurrentSscc()
+  }, { immediate: true })
+
   function resetSession () {
     const session = createEventSession()
     eventSession.value = session
     digitalLink.value = session.digitalLink
-    executedSteps.value = new Set()
     loadingStep.value = null
     debugLog('session', 'Generated new SSCC session', session)
   }
@@ -74,7 +118,6 @@
     const session = createEventSessionFromDigitalLink(scannedDigitalLink)
     eventSession.value = session
     digitalLink.value = session.digitalLink
-    executedSteps.value = new Set()
     loadingStep.value = null
     scannerDialogOpen.value = false
 
@@ -113,7 +156,6 @@
         getStepNumber(stepId),
         eventSession.value,
       )
-      executedSteps.value = new Set([...executedSteps.value, stepId])
       debugLog('step', `Step completed: ${label}`, result)
       notify(
         `${label}: ${result.document_file} erzeugt (${result.event_count} Events)`,
@@ -128,7 +170,13 @@
     }
   }
 
-  onMounted(resetSession)
+  onMounted(() => {
+    resetSession()
+  })
+
+  onUnmounted(() => {
+    ssccSubscriptionService.unsubscribe()
+  })
 </script>
 
 <template>

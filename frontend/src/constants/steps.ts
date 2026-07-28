@@ -38,3 +38,11 @@ export const LIFECYCLE_STORIES: LifecycleStory[] = [
 ]
 
 export const LIFECYCLE_STEPS: LifecycleStep[] = LIFECYCLE_STORIES.flatMap(story => story.steps)
+
+export function getStepByNumber (stepNumber: number): LifecycleStep | undefined {
+  return LIFECYCLE_STEPS[stepNumber - 1]
+}
+
+export function getStepIdByNumber (stepNumber: number): string | undefined {
+  return getStepByNumber(stepNumber)?.id
+}

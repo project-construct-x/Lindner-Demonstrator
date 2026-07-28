@@ -42,3 +42,20 @@ class TriggerResponse(BaseModel):
     sscc: str
     document_file: str
     event_count: int
+
+
+class SsccSnapshot(BaseModel):
+    sscc: str
+    completed_steps: list[int]
+    completed_step_ids: list[str]
+
+
+class StepCompletedEvent(BaseModel):
+    sscc: str
+    step_number: int
+    step_id: str
+    step_label: str
+    document_file: str
+    event_count: int
+    completed_steps: list[int]
+    completed_step_ids: list[str]
