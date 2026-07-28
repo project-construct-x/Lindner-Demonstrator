@@ -22,8 +22,12 @@ export class BaseService {
     options: RequestOptions = {},
   ): Promise<T> {
     const { body, headers, ...init } = options
+    const url = `${this.baseUrl}${path}`
+    const method = init.method ?? 'GET'
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
+    console.log('[Construct-X] [api]', `${method} ${url}`, body ?? '')
+
+    const response = await fetch(url, {
       ...init,
       headers: {
         ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -33,19 +37,28 @@ export class BaseService {
     })
 
     if (!response.ok) {
-      throw await this.parseError(response)
+      const apiError = await this.parseError(response)
+      console.error('[Construct-X] [api]', `${method} ${url} failed`, {
+        status: response.status,
+        body: apiError.body,
+      })
+      throw apiError
     }
 
     if (response.status === 204) {
+      console.log('[Construct-X] [api]', `${method} ${url} -> 204`)
       return undefined as T
     }
 
     const text = await response.text()
     if (!text) {
+      console.log('[Construct-X] [api]', `${method} ${url} -> empty`)
       return undefined as T
     }
 
-    return JSON.parse(text) as T
+    const data = JSON.parse(text) as T
+    console.log('[Construct-X] [api]', `${method} ${url} ->`, data)
+    return data
   }
 
   protected get<T> (

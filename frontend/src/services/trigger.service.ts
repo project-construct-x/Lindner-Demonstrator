@@ -1,6 +1,7 @@
 import type { EventSession } from '@/utils/epcis-session'
 import { env } from '@/config/env'
 import { BaseService } from '@/services/base'
+import { debugLog } from '@/utils/debug'
 
 export interface TriggerResult {
   step_id: string
@@ -15,9 +16,10 @@ class TriggerService extends BaseService {
   }
 
   triggerStep (stepNumber: number, session: EventSession): Promise<TriggerResult> {
-    return this.post<TriggerResult>(`/trigger/${stepNumber}`, {
-      sscc: session.sscc,
-    })
+    const payload = { sscc: session.sscc }
+    debugLog('trigger', `POST /trigger/${stepNumber}`, payload)
+
+    return this.post<TriggerResult>(`/trigger/${stepNumber}`, payload)
   }
 }
 

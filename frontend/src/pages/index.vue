@@ -2,11 +2,14 @@
   import QrcodeVue from 'qrcode.vue'
   import { computed, onMounted, ref, useId } from 'vue'
   import constructXLogo from '@/assets/cx.jpg'
+  import QrScannerDialog from '@/components/QrScannerDialog.vue'
   import { env } from '@/config/env'
   import { LIFECYCLE_STEPS, LIFECYCLE_STORIES } from '@/constants/steps'
   import { triggerService } from '@/services/trigger.service'
+  import { debugError, debugLog } from '@/utils/debug'
   import {
     createEventSession,
+    createEventSessionFromDigitalLink,
     type EventSession,
   } from '@/utils/epcis-session'
 
@@ -20,24 +23,7 @@
   const snackbar = ref(false)
   const snackbarText = ref('')
   const snackbarColor = ref<'success' | 'error'>('success')
-  const infoDialogOpen = ref(false)
-
-  const sessionInfoRows = computed(() => {
-    if (!eventSession.value) {
-      return []
-    }
-
-    const session = eventSession.value
-    return [
-      { label: 'SSCC', value: session.sscc },
-    ]
-  })
-
-  const completedStepLabels = computed(() =>
-    LIFECYCLE_STEPS
-      .filter(step => executedSteps.value.has(step.id))
-      .map(step => `${getStepNumber(step.id)}. ${step.label}`),
-  )
+  const scannerDialogOpen = ref(false)
 
   const nextStepIndex = computed(() =>
     LIFECYCLE_STEPS.findIndex(step => !executedSteps.value.has(step.id)),
@@ -79,6 +65,21 @@
     digitalLink.value = session.digitalLink
     executedSteps.value = new Set()
     loadingStep.value = null
+    debugLog('session', 'Generated new SSCC session', session)
+  }
+
+  function applyScannedSscc (scannedDigitalLink: string) {
+    debugLog('session', 'Applying scanned SSCC', { scannedDigitalLink })
+
+    const session = createEventSessionFromDigitalLink(scannedDigitalLink)
+    eventSession.value = session
+    digitalLink.value = session.digitalLink
+    executedSteps.value = new Set()
+    loadingStep.value = null
+    scannerDialogOpen.value = false
+
+    debugLog('session', 'Applied scanned SSCC', session)
+    notify('SSCC aus QR-Code übernommen', 'success')
   }
 
   function notify (text: string, color: 'success' | 'error') {
@@ -98,6 +99,11 @@
     }
 
     loadingStep.value = stepId
+    debugLog('step', `Triggering step ${getStepNumber(stepId)}: ${label}`, {
+      stepId,
+      sscc: eventSession.value?.sscc,
+    })
+
     try {
       if (!eventSession.value) {
         throw new Error('Keine aktive SSCC-Sitzung')
@@ -108,12 +114,14 @@
         eventSession.value,
       )
       executedSteps.value = new Set([...executedSteps.value, stepId])
+      debugLog('step', `Step completed: ${label}`, result)
       notify(
         `${label}: ${result.document_file} erzeugt (${result.event_count} Events)`,
         'success',
       )
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler'
+      debugError('step', `Step failed: ${label}`, error)
       notify(message, 'error')
     } finally {
       loadingStep.value = null
@@ -168,12 +176,9 @@
         <qrcode-vue
           v-if="digitalLink"
           :id="qrGradientId"
-          background="transparent"
+          background="#ffffff"
           class="sscc-card__qr-code"
-          gradient
-          gradient-end-color="#5a9fd4"
-          gradient-start-color="#f8fafc"
-          gradient-type="linear"
+          foreground="#000000"
           level="M"
           :radius="0"
           render-as="svg"
@@ -187,6 +192,7 @@
           class="sscc-card__uri"
           density="comfortable"
           hide-details
+          label="SSCC"
           :model-value="digitalLink"
           prepend-inner-icon="mdi-link-variant"
           readonly
@@ -207,15 +213,15 @@
           </v-btn>
 
           <v-btn
-            class="sscc-card__btn sscc-card__btn--info"
+            class="sscc-card__btn sscc-card__btn--scan"
             color="primary"
-            prepend-icon="mdi-information-outline"
+            prepend-icon="mdi-qrcode-scan"
             rounded="lg"
             size="large"
             variant="tonal"
-            @click="infoDialogOpen = true"
+            @click="scannerDialogOpen = true"
           >
-            Verwendete Daten Anzeigen
+            SSCC scannen
           </v-btn>
         </div>
       </div>
@@ -345,73 +351,10 @@
       </div>
     </section>
 
-    <v-dialog
-      v-model="infoDialogOpen"
-      max-width="640"
-      scrollable
-    >
-      <v-card class="info-dialog" rounded="lg">
-        <v-card-title class="info-dialog__title">
-          <v-icon class="mr-2" icon="mdi-information-outline" />
-          Aktuelle Sitzungsdaten
-        </v-card-title>
-
-        <v-card-text class="info-dialog__content">
-          <div
-            v-for="row in sessionInfoRows"
-            :key="row.label"
-            class="info-dialog__row"
-          >
-            <span class="info-dialog__label">{{ row.label }}</span>
-            <code class="info-dialog__value">{{ row.value }}</code>
-          </div>
-
-          <div class="info-dialog__row">
-            <span class="info-dialog__label">Fortschritt</span>
-
-            <span class="info-dialog__value info-dialog__value--text">
-              {{ executedSteps.size }} / {{ LIFECYCLE_STEPS.length }} Schritte
-            </span>
-          </div>
-
-          <div class="info-dialog__row info-dialog__row--stacked">
-            <span class="info-dialog__label">Abgeschlossene Schritte</span>
-
-            <span
-              v-if="completedStepLabels.length === 0"
-              class="info-dialog__value info-dialog__value--text info-dialog__value--muted"
-            >
-              Noch keine Schritte ausgeführt
-            </span>
-
-            <ul
-              v-else
-              class="info-dialog__steps"
-            >
-              <li
-                v-for="stepLabel in completedStepLabels"
-                :key="stepLabel"
-              >
-                {{ stepLabel }}
-              </li>
-            </ul>
-          </div>
-        </v-card-text>
-
-        <v-card-actions class="info-dialog__actions">
-          <v-spacer />
-
-          <v-btn
-            color="primary"
-            rounded="lg"
-            variant="flat"
-            @click="infoDialogOpen = false"
-          >
-            Schließen
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <QrScannerDialog
+      v-model="scannerDialogOpen"
+      @scanned="applyScannedSscc"
+    />
 
     <v-snackbar
       v-model="snackbar"
@@ -555,9 +498,12 @@
 }
 
 .sscc-card__qr {
+  background: #fff;
+  border-radius: 12px;
   flex-shrink: 0;
   line-height: 0;
-  width: 132px;
+  padding: 8px;
+  width: 148px;
 }
 
 .sscc-card__qr-code {
@@ -630,7 +576,7 @@
   text-transform: none;
 }
 
-.sscc-card__btn--info {
+.sscc-card__btn--scan {
   box-shadow: none;
 }
 
@@ -910,86 +856,6 @@
     grid-template-columns: repeat(var(--step-count), minmax(200px, 260px));
     overflow-x: auto;
     padding-bottom: 8px;
-  }
-}
-
-.info-dialog {
-  background: #111827;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-}
-
-.info-dialog__title {
-  color: #f1f5f9;
-  font-size: 1.125rem;
-  font-weight: 700;
-  padding: 20px 24px 12px;
-}
-
-.info-dialog__content {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 8px 24px 20px;
-}
-
-.info-dialog__row {
-  display: grid;
-  gap: 6px;
-  grid-template-columns: 140px minmax(0, 1fr);
-}
-
-.info-dialog__row--stacked {
-  grid-template-columns: 1fr;
-}
-
-.info-dialog__label {
-  color: #94a3b8;
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-
-.info-dialog__value {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 8px;
-  color: #5a9fd4;
-  display: block;
-  font-family: 'Roboto Mono', monospace;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-  padding: 8px 10px;
-  word-break: break-word;
-}
-
-.info-dialog__value--text {
-  background: transparent;
-  border: 0;
-  color: #e2e8f0;
-  font-family: inherit;
-  font-size: 0.875rem;
-  padding: 0;
-}
-
-.info-dialog__value--muted {
-  color: #64748b;
-}
-
-.info-dialog__steps {
-  color: #e2e8f0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  margin: 0;
-  padding-left: 1.1rem;
-}
-
-.info-dialog__actions {
-  padding: 12px 24px 20px;
-}
-
-@media (max-width: 600px) {
-  .info-dialog__row {
-    grid-template-columns: 1fr;
   }
 }
 </style>
