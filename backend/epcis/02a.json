@@ -1,10 +1,4 @@
 {
-  "@context": [
-    "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
-    {
-      "cx": "https://cx.com/epcis/cx-context.jsonld"
-    }
-  ],
   "type": "ObjectEvent",
   "action": "ADD",
   "bizStep": "creating_class_instance",

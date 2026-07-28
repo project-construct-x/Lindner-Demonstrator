@@ -1,12 +1,11 @@
 {
-  "@context": [
-    "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
-  ],
   "type": "ObjectEvent",
   "action": "OBSERVE",
   "bizStep": "receiving",
   "disposition": "in_progress",
-  "epcList": ["$sscc"],
+  "epcList": [
+    "$sscc"
+  ],
   "eventTime": "$eventTime",
   "eventTimeZoneOffset": "$eventTimeZoneOffset",
   "readPoint": {
