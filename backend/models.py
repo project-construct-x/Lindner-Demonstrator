@@ -29,17 +29,12 @@ class EventSession(BaseModel):
     )
 
 
-class StepContext(BaseModel):
-    eventTimeZoneOffset: str = Field(
-        ...,
-        description="Local timezone offset for the generated eventTime",
-        examples=["+02:00"],
-    )
-
-
 class TriggerRequest(BaseModel):
-    session: EventSession
-    step: StepContext
+    sscc: str = Field(
+        ...,
+        description="GS1 Digital Link URI for the SSCC (stable for the whole session)",
+        examples=["https://id.gs1.org/00/006141411234567890"],
+    )
 
 
 class TriggerResponse(BaseModel):

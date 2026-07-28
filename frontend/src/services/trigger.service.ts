@@ -1,4 +1,4 @@
-import type { EventSession, StepContext } from '@/utils/epcis-session'
+import type { EventSession } from '@/utils/epcis-session'
 import { env } from '@/config/env'
 import { BaseService } from '@/services/base'
 
@@ -14,20 +14,9 @@ class TriggerService extends BaseService {
     super(env.backendBaseUrl)
   }
 
-  triggerStep (
-    stepNumber: number,
-    session: EventSession,
-    step: StepContext,
-  ): Promise<TriggerResult> {
+  triggerStep (stepNumber: number, session: EventSession): Promise<TriggerResult> {
     return this.post<TriggerResult>(`/trigger/${stepNumber}`, {
-      session: {
-        sscc: session.sscc,
-        lgtin1: session.lgtin1,
-        lgtin2: session.lgtin2,
-        desadv: session.desadv,
-        po: session.po,
-      },
-      step,
+      sscc: session.sscc,
     })
   }
 }

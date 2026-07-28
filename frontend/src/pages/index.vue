@@ -7,9 +7,7 @@
   import { triggerService } from '@/services/trigger.service'
   import {
     createEventSession,
-    createStepContext,
     type EventSession,
-    formatEventTimeZoneOffset,
   } from '@/utils/epcis-session'
 
   const swaggerUrl = `${env.backendBaseUrl}/docs`
@@ -32,11 +30,6 @@
     const session = eventSession.value
     return [
       { label: 'SSCC', value: session.sscc },
-      { label: 'LGTIN 1', value: session.lgtin1 },
-      { label: 'LGTIN 2', value: session.lgtin2 },
-      { label: 'Despatch Advice', value: session.desadv },
-      { label: 'Purchase Order', value: session.po },
-      { label: 'Zeitzone', value: formatEventTimeZoneOffset(new Date()) },
     ]
   })
 
@@ -113,7 +106,6 @@
       const result = await triggerService.triggerStep(
         getStepNumber(stepId),
         eventSession.value,
-        createStepContext(),
       )
       executedSteps.value = new Set([...executedSteps.value, stepId])
       notify(

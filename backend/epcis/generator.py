@@ -9,15 +9,21 @@ from uuid import uuid4
 
 from config import EPCIS_TEMPLATES_DIR, EVENTS_DIR
 from epcis.capture import send_to_capture
+from epcis.session_store import (
+    EVENT_TIME_ZONE_OFFSET,
+    ensure_desadv,
+    ensure_material_fields,
+    get_session,
+    step_needs_material,
+)
 from epcis.steps import Step
-from models import EventSession, StepContext
+from models import EventSession
 
 logger = logging.getLogger(__name__)
 
 DOCUMENT_TEMPLATE_PATH = EPCIS_TEMPLATES_DIR / "document.json"
 
 SSCC_URI_PATTERN = re.compile(r"^https://id\.gs1\.org/00/\d{18}$")
-EVENT_TIMEZONE_PATTERN = re.compile(r"^[+-]\d{2}:\d{2}$")
 LGTIN_URI_PATTERN = re.compile(
     r"^https://id\.gs1\.org/01/\d{14}/10/[0-9a-z]+$"
 )
@@ -41,23 +47,18 @@ def validate_sscc(sscc: str) -> None:
 def validate_session(session: EventSession) -> None:
     validate_sscc(session.sscc)
     for lgtin in (session.lgtin1, session.lgtin2):
-        if not LGTIN_URI_PATTERN.match(lgtin):
+        if lgtin and not LGTIN_URI_PATTERN.match(lgtin):
             raise ValueError(
                 "LGTIN must be a GS1 Digital Link URI: https://id.gs1.org/01/{gtin}/10/{lot}"
             )
-    if not DESADV_URI_PATTERN.match(session.desadv):
+    if session.desadv and not DESADV_URI_PATTERN.match(session.desadv):
         raise ValueError(
             "desadv must be a GS1 Digital Link URI: https://id.gs1.org/253/{reference}"
         )
-    if not DESADV_URI_PATTERN.match(session.po):
+    if session.po and not DESADV_URI_PATTERN.match(session.po):
         raise ValueError(
             "po must be a GS1 Digital Link URI: https://id.gs1.org/253/{reference}"
         )
-
-
-def validate_step_context(step: StepContext) -> None:
-    if not EVENT_TIMEZONE_PATTERN.match(step.eventTimeZoneOffset):
-        raise ValueError("eventTimeZoneOffset must be like +02:00 or -05:00")
 
 
 def sscc_folder_name(sscc: str) -> str:
@@ -148,13 +149,13 @@ def _persist_document(document: dict, document_file: Path) -> None:
 
 def generate_step_events(
     step: Step,
-    session: EventSession,
-    step_context: StepContext,
+    sscc: str,
 ) -> tuple[dict, Path]:
-    validate_session(session)
-    validate_step_context(step_context)
+    validate_sscc(sscc)
+    if step_needs_material(step.number):
+        ensure_material_fields(sscc)
 
-    sscc_dir = EVENTS_DIR / sscc_folder_name(session.sscc)
+    sscc_dir = EVENTS_DIR / sscc_folder_name(sscc)
     sscc_dir.mkdir(parents=True, exist_ok=True)
 
     template_count = len(step.template_files)
@@ -162,8 +163,14 @@ def generate_step_events(
     events: list[dict] = []
 
     for index, template_file in enumerate(step.template_files):
+        if template_file == "04.json":
+            ensure_desadv(sscc)
+
+        session = get_session(sscc)
+        validate_session(session)
+
         event_context = _event_context_for_template(
-            step_context.eventTimeZoneOffset,
+            EVENT_TIME_ZONE_OFFSET,
             index,
             template_count,
             triggered_at,

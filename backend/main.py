@@ -56,7 +56,7 @@ def trigger(step_number: int, body: TriggerRequest) -> TriggerResponse:
         raise HTTPException(status_code=404, detail=f"Unknown step: {step_number}")
 
     try:
-        document, document_file = generate_step_events(step, body.session, body.step)
+        document, document_file = generate_step_events(step, body.sscc)
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:
@@ -76,7 +76,7 @@ def trigger(step_number: int, body: TriggerRequest) -> TriggerResponse:
 
     return TriggerResponse(
         step_id=step.id,
-        sscc=body.session.sscc,
+        sscc=body.sscc,
         document_file=document_file.name,
         event_count=len(document["epcisBody"]["eventList"]),
     )
