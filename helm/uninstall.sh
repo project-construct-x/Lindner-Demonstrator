@@ -5,7 +5,7 @@
 set -e
 
 KUBE_CONTEXT="eecc-prod"
-NAMESPACE="construct-x"
+NAMESPACE="cx-uc-demonstrator"
 RELEASE_NAME="demonstrator"
 
 RED='\033[0;31m'

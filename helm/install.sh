@@ -5,7 +5,7 @@
 set -e
 
 KUBE_CONTEXT="eecc-prod"
-NAMESPACE="construct-x"
+NAMESPACE="cx-uc-demonstrator"
 VALUES_FILE="values-construct-x.yaml"
 RELEASE_NAME="demonstrator"
 
