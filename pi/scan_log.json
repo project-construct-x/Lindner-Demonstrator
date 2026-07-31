@@ -1,0 +1,30 @@
+[
+    {
+        "pi_id": 1,
+        "schritt": "Schritt 1: Ausgang beim Hersteller",
+        "datum_uhrzeit": "2026-07-29 16:36:55",
+        "timestamp_epoch": 1785335815.115579,
+        "sscc_qr_inhalt": "https://id.gs1.org/00/055955730158227332"
+    },
+    {
+        "pi_id": 1,
+        "schritt": "Schritt 1: Ausgang beim Hersteller",
+        "datum_uhrzeit": "2026-07-31 12:08:05",
+        "timestamp_epoch": 1785492485.9463677,
+        "sscc_qr_inhalt": "https://id.gs1.org/00/561143284280289809"
+    },
+    {
+        "pi_id": 1,
+        "schritt": "Schritt 1: Ausgang beim Hersteller",
+        "datum_uhrzeit": "2026-07-31 12:08:31",
+        "timestamp_epoch": 1785492511.1468089,
+        "sscc_qr_inhalt": "https://id.gs1.org/00/544489240933588325"
+    },
+    {
+        "pi_id": 1,
+        "schritt": "Schritt 1: Ausgang beim Hersteller",
+        "datum_uhrzeit": "2026-07-31 12:11:17",
+        "timestamp_epoch": 1785492677.362381,
+        "sscc_qr_inhalt": "https://id.gs1.org/00/564092176767313245"
+    }
+]

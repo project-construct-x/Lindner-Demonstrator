@@ -14,7 +14,7 @@ from flask import Flask, Response
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- KONFIGURATION & PI-AUSWAHL ---
-API_BASE_URL = "https://132.195.160.160/api/trigger"
+API_BASE_URL = "https://demo.dpp.tmdt.uni-wuppertal.de/api/trigger"
 LOG_DATEI = "scan_log.json"
 SPERR_DAUER = 30  # Sekunden
 
@@ -243,7 +243,7 @@ def index():
                 <img src="/static/Logo_CX.png" alt="Construct-X Logo" class="logo" onerror="this.style.display='none'">
                 <div class="brand-text">
                     <span class="project-name">Construct-X</span>
-                    <span class="title">📷 SSCC QR-Scanner</span>
+                    <span class="title">QR-Scanner</span>
                 </div>
             </div>
             <span class="badge">Raspberry Pi #{STEP_NUMBER}</span>
@@ -253,10 +253,6 @@ def index():
         </div>
         <div class="video-box">
             <img src="/video_feed" alt="Kamera Live-Stream">
-        </div>
-        <div class="status-bar">
-            <div class="status-item"><span class="dot dot-green"></span> Grüne LED: Neuer Scan</div>
-            <div class="status-item"><span class="dot dot-red"></span> Rote LED: Duplette / Gesperrt</div>
         </div>
     </div>
 </body>
