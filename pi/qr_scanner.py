@@ -1,4 +1,12 @@
-import cv2, numpy as np, time, json, os, sys, threading, requests, urllib3
+import cv2
+import numpy as np
+import time
+import json
+import os
+import sys
+import threading
+import requests
+import urllib3
 from datetime import datetime
 from flask import Flask, Response
 
@@ -10,7 +18,7 @@ API_BASE_URL = "https://132.195.160.160/api/trigger"
 LOG_DATEI = "scan_log.json"
 SPERR_DAUER = 30  # Sekunden
 
-# Liest Pi-Nummer aus dem Startbefehl (z.B. python3 script.py 2), sonst Standard = 1
+# Liest Pi-Nummer aus dem Startbefehl (z.B. python3 qr_scanner.py 2), sonst Standard = 1
 STEP_NUMBER = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 1
 STEP_NAMES = {
     1: "Schritt 1: Ausgang beim Hersteller",
@@ -24,7 +32,6 @@ try:
     from gpiozero import LED
     led_erfolg, led_sperre = LED(4), LED(17)
     GPIO_ACTIVE = True
-    # Kurzer Selbsttest beim Start
     for led in (led_erfolg, led_sperre): led.on()
     time.sleep(0.5)
     for led in (led_erfolg, led_sperre): led.off()
@@ -121,19 +128,139 @@ def generate_frames():
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
         time.sleep(0.001)
 
+# --- WEBOBERFLÄCHE (CONSTRUCT-X DASHBOARD) ---
 @app.route('/')
 def index():
-    return f"""<html><head><title>Pi #{STEP_NUMBER}</title>
+    return f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construct-X - Pi #{STEP_NUMBER}</title>
     <style>
-    body {{ font-family: Arial, sans-serif; text-align: center; background: #111; color: white; }}
-    img {{ border: 4px solid #00ff00; border-radius: 8px; margin-top: 20px; }}
-    .badge {{ background: #0275d8; color: white; padding: 4px 8px; border-radius: 4px; }}
-    </style></head>
-    <body>
-    <h1>📷 SSCC Scanner <span class="badge">Raspberry Pi #{STEP_NUMBER}</span></h1>
-    <h3>Prozessschritt: {STEP_BEZEICHNUNG}</h3>
-    <img src="/video_feed" width="640" height="480">
-    </body></html>"""
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{ 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #0f172a; 
+            color: #f8fafc; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 2rem 1rem;
+        }}
+        .card {{
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 1.5rem;
+            max-width: 720px;
+            width: 100%;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }}
+        .header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #334155;
+        }}
+        .brand {{
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-align: left;
+        }}
+        .logo {{
+            height: 38px;
+            width: auto;
+            object-fit: contain;
+        }}
+        .brand-text {{
+            display: flex;
+            flex-direction: column;
+        }}
+        .project-name {{
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #94a3b8;
+        }}
+        .title {{ 
+            font-size: 1.15rem; 
+            font-weight: 600; 
+            color: #38bdf8; 
+        }}
+        .badge {{
+            background: #E94509; /* Projekt Orange */
+            color: white;
+            padding: 0.3rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }}
+        .step-info {{
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 1.25rem;
+        }}
+        .video-box {{
+            position: relative;
+            border-radius: 8px;
+            border: 2px solid #3b82f6;
+            background: #000;
+            display: inline-block;
+            overflow: hidden;
+            width: 100%;
+            max-width: 640px;
+        }}
+        .video-box img {{
+            display: block;
+            width: 100%;
+            height: auto;
+        }}
+        .status-bar {{
+            margin-top: 1.25rem;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }}
+        .status-item {{ display: flex; align-items: center; gap: 0.4rem; }}
+        .dot {{ width: 10px; height: 10px; border-radius: 50%; display: inline-block; }}
+        .dot-green {{ background: #22c55e; box-shadow: 0 0 8px #22c55e; }}
+        .dot-red {{ background: #ef4444; box-shadow: 0 0 8px #ef4444; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <div class="brand">
+                <img src="/static/Logo_CX.png" alt="Construct-X Logo" class="logo" onerror="this.style.display='none'">
+                <div class="brand-text">
+                    <span class="project-name">Construct-X</span>
+                    <span class="title">📷 SSCC QR-Scanner</span>
+                </div>
+            </div>
+            <span class="badge">Raspberry Pi #{STEP_NUMBER}</span>
+        </div>
+        <div class="step-info">
+            Prozessschritt: <strong>{STEP_BEZEICHNUNG}</strong>
+        </div>
+        <div class="video-box">
+            <img src="/video_feed" alt="Kamera Live-Stream">
+        </div>
+        <div class="status-bar">
+            <div class="status-item"><span class="dot dot-green"></span> Grüne LED: Neuer Scan</div>
+            <div class="status-item"><span class="dot dot-red"></span> Rote LED: Duplette / Gesperrt</div>
+        </div>
+    </div>
+</body>
+</html>"""
 
 @app.route('/video_feed')
 def video_feed():
