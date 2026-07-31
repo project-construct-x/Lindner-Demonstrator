@@ -16,6 +16,7 @@ services:
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
       - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --log.level=DEBUG
     security_opt:
       - no-new-privileges:true
     ports:
@@ -42,7 +43,7 @@ services:
       start_period: 30s
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.backend.rule=Host(`132.195.160.160`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.rule=Host(`demo.dpp.tmdt.uni-wuppertal.de`) && PathPrefix(`/api`)"
       - traefik.http.routers.backend.entrypoints=websecure
       - traefik.http.routers.backend.tls=true
       - traefik.http.routers.backend.tls.certresolver=letsencrypt
@@ -69,7 +70,7 @@ services:
       start_period: 60s
     labels:
       - traefik.enable=true
-      - "traefik.http.routers.frontend.rule=Host(`132.195.160.160`)"
+      - "traefik.http.routers.frontend.rule=Host(`demo.dpp.tmdt.uni-wuppertal.de`)"
       - traefik.http.routers.frontend.entrypoints=websecure
       - traefik.http.routers.frontend.tls=true
       - traefik.http.routers.frontend.tls.certresolver=letsencrypt
