@@ -246,7 +246,7 @@ def index():
                     <span class="title">QR-Scanner</span>
                 </div>
             </div>
-            <span class="badge">Raspberry Pi #{STEP_NUMBER}</span>
+            <span class="badge">Raspberry Pi {STEP_NUMBER}</span>
         </div>
         <div class="step-info">
             Prozessschritt: <strong>{STEP_BEZEICHNUNG}</strong>
