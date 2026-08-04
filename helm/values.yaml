@@ -18,10 +18,6 @@ backend:
     size: 1Gi
     storageClass: longhorn
     mountPath: /backend/output
-  env:
-    logLevel: INFO
-    epcatBaseUrl: https://epcat2.construct-x.prod-k8s.eecc.de/api
-  corsOrigins: ""
   resources:
     limits:
       cpu: 500m

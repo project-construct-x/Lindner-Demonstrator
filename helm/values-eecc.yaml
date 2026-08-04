@@ -10,7 +10,6 @@ hosts:
   - demonstrator.construct-x.prod-k8s.eecc.de
 
 backend:
-  corsOrigins: https://demonstrator.construct-x.prod-k8s.eecc.de
   image:
     pullPolicy: Always
   persistence:
