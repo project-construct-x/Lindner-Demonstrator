@@ -34,16 +34,41 @@ function cryptoRandomInt (max: number): number {
   return array[0]! % max
 }
 
-function buildSsccSerial (): string {
+function buildSsccSerial (sequenceOffset = 0): string {
   const seconds = Math.floor(Date.now() / 1000)
   const timePart = seconds % 100_000
-  const randomPart = cryptoRandomInt(1000)
+  const randomPart = (cryptoRandomInt(1000) + sequenceOffset) % 1000
   return String(timePart * 1000 + randomPart).padStart(8, '0')
 }
 
-export function generateSscc (): string {
-  const base17 = `${SSCC_PREFIX}${buildSsccSerial()}`
+function ssccDigitsFromSerial (serial: string): string {
+  const base17 = `${SSCC_PREFIX}${serial}`
   return `${base17}${gs1CheckDigit(base17)}`
+}
+
+export function generateSscc (): string {
+  return ssccDigitsFromSerial(buildSsccSerial())
+}
+
+export function generateSsccBatch (count: number): string[] {
+  if (count < 1) {
+    throw new Error('Count must be at least 1')
+  }
+
+  const seen = new Set<string>()
+  const results: string[] = []
+
+  for (let offset = 0; results.length < count; offset += 1) {
+    const digits = ssccDigitsFromSerial(buildSsccSerial(offset))
+    if (seen.has(digits)) {
+      continue
+    }
+
+    seen.add(digits)
+    results.push(toDigitalLink(digits))
+  }
+
+  return results
 }
 
 export function toDigitalLink (sscc: string): string {

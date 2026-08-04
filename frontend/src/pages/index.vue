@@ -3,6 +3,7 @@
   import { computed, onMounted, onUnmounted, ref, useId, watch } from 'vue'
   import constructXLogo from '@/assets/cx.jpg'
   import QrScannerDialog from '@/components/QrScannerDialog.vue'
+  import SsccPrintDialog from '@/components/SsccPrintDialog.vue'
   import { env } from '@/config/env'
   import { LIFECYCLE_STEPS, LIFECYCLE_STORIES } from '@/constants/steps'
   import {
@@ -28,6 +29,7 @@
   const snackbarText = ref('')
   const snackbarColor = ref<'success' | 'error'>('success')
   const scannerDialogOpen = ref(false)
+  const ssccPrintDialogOpen = ref(false)
 
   const nextStepIndex = computed(() =>
     LIFECYCLE_STEPS.findIndex(step => !executedSteps.value.has(step.id)),
@@ -215,6 +217,17 @@
           variant="tonal"
         >
           Swagger API
+        </v-btn>
+        <v-btn
+          class="demo__api-btn"
+          color="primary"
+          prepend-icon="mdi-printer"
+          rounded="lg"
+          size="small"
+          variant="tonal"
+          @click="ssccPrintDialogOpen = true"
+        >
+          SSCCs
         </v-btn>
       </div>
     </header>
@@ -404,6 +417,8 @@
       @scanned="applyScannedSscc"
     />
 
+    <SsccPrintDialog v-model="ssccPrintDialogOpen" />
+
     <v-snackbar
       v-model="snackbar"
       class="demo-snackbar"
@@ -484,15 +499,19 @@
 }
 
 .demo__api-btn {
-  align-self: flex-end;
+  font-size: 0.875rem;
+  letter-spacing: normal;
   text-transform: none;
 }
 
 .demo__hero-aside {
+  align-items: center;
   align-self: flex-start;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .demo__progress-card {
@@ -863,6 +882,7 @@
 
   .demo__hero-aside {
     align-self: stretch;
+    flex-direction: row;
     min-width: 0;
     width: 100%;
   }
