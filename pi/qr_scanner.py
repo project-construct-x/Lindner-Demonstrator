@@ -18,6 +18,13 @@ API_BASE_URL = "https://demo.dpp.tmdt.uni-wuppertal.de/api/trigger"
 LOG_DATEI = "scan_log.json"
 SPERR_DAUER = 30  # Sekunden
 
+# IP-Adressen der drei Raspberry Pis für die Gesamtübersicht (/all)
+PI_IPS = {
+    1: "192.168.0.150",
+    2: "192.168.0.151",
+    3: "192.168.0.152"
+}
+
 # Liest Pi-Nummer aus dem Startbefehl (z.B. python3 qr_scanner.py 2), sonst Standard = 1
 STEP_NUMBER = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 1
 STEP_NAMES = {
@@ -121,14 +128,11 @@ def generate_frames():
                     for i in range(len(pts)):
                         cv2.line(frame, tuple(pts[i]), tuple(pts[(i + 1) % len(pts)]), (0, 255, 0), 3)
 
-        cv2.putText(frame, f"Pi #{STEP_NUMBER} | Sperren: {len(gescannte_codes)}", (20, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 0), 2, cv2.LINE_AA)
-
         ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
         time.sleep(0.001)
 
-# --- WEBOBERFLÄCHE (CONSTRUCT-X DASHBOARD) ---
+# --- ROUTE 1: EINZEL-DASHBOARD DES PIS ---
 @app.route('/')
 def index():
     return f"""<!DOCTYPE html>
@@ -136,7 +140,7 @@ def index():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Construct-X - Pi #{STEP_NUMBER}</title>
+    <title>Construct-X - Pi {STEP_NUMBER}</title>
     <style>
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
         body {{ 
@@ -234,6 +238,14 @@ def index():
         .dot {{ width: 10px; height: 10px; border-radius: 50%; display: inline-block; }}
         .dot-green {{ background: #22c55e; box-shadow: 0 0 8px #22c55e; }}
         .dot-red {{ background: #ef4444; box-shadow: 0 0 8px #ef4444; }}
+        .nav-link {{
+            margin-top: 1rem;
+            display: inline-block;
+            color: #38bdf8;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }}
+        .nav-link:hover {{ text-decoration: underline; }}
     </style>
 </head>
 <body>
@@ -246,13 +258,142 @@ def index():
                     <span class="title">QR-Scanner</span>
                 </div>
             </div>
-            <span class="badge">Raspberry Pi {STEP_NUMBER}</span>
+            <span class="badge">Raspberry Pi #{STEP_NUMBER}</span>
         </div>
         <div class="step-info">
             Prozessschritt: <strong>{STEP_BEZEICHNUNG}</strong>
         </div>
         <div class="video-box">
             <img src="/video_feed" alt="Kamera Live-Stream">
+        </div>
+        <a href="/all" class="nav-link">🖥️ Zur Gesamtübersicht aller 3 Kameras</a>
+    </div>
+</body>
+</html>"""
+
+# --- ROUTE 2: MULTI-STREAM GESAMTÜBERSICHT ALLER 3 PIS ---
+@app.route('/all')
+@app.route('/overview')
+def overview():
+    return f"""<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construct-X - Live Monitoring (Schritt 1 - 3)</title>
+    <style>
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{ 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: #0f172a; 
+            color: #f8fafc; 
+            padding: 2rem 1rem;
+            min-height: 100vh;
+        }}
+        .header-main {{
+            text-align: center;
+            margin-bottom: 2rem;
+        }}
+        .header-main h1 {{
+            color: #38bdf8;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }}
+        .header-main p {{
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }}
+        .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }}
+        .cam-card {{
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }}
+        .cam-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 0.75rem;
+        }}
+        .badge {{
+            background: #E94509;
+            color: white;
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }}
+        .step-title {{
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            font-weight: 600;
+        }}
+        .video-box {{
+            width: 100%;
+            border-radius: 8px;
+            border: 2px solid #3b82f6;
+            background: #000;
+            overflow: hidden;
+            aspect-ratio: 4 / 3;
+        }}
+        .video-box img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }}
+    </style>
+</head>
+<body>
+    <div class="header-main">
+        <h1>Construct-X Gesamtsystem Monitoring</h1>
+        <p>Live-Kamerastreams aller drei Prozessschritte</p>
+    </div>
+
+    <div class="grid">
+        <!-- Kamera 1 -->
+        <div class="cam-card">
+            <div class="cam-header">
+                <span class="step-title">{STEP_NAMES[1]}</span>
+                <span class="badge">Pi #1</span>
+            </div>
+            <div class="video-box">
+                <img src="http://{PI_IPS[1]}:5000/video_feed" alt="Pi 1 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 1 nicht erreichbar';">
+            </div>
+        </div>
+
+        <!-- Kamera 2 -->
+        <div class="cam-card">
+            <div class="cam-header">
+                <span class="step-title">{STEP_NAMES[2]}</span>
+                <span class="badge">Pi #2</span>
+            </div>
+            <div class="video-box">
+                <img src="http://{PI_IPS[2]}:5000/video_feed" alt="Pi 2 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 2 nicht erreichbar';">
+            </div>
+        </div>
+
+        <!-- Kamera 3 -->
+        <div class="cam-card">
+            <div class="cam-header">
+                <span class="step-title">{STEP_NAMES[3]}</span>
+                <span class="badge">Pi #3</span>
+            </div>
+            <div class="video-box">
+                <img src="http://{PI_IPS[3]}:5000/video_feed" alt="Pi 3 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 3 nicht erreichbar';">
+            </div>
         </div>
     </div>
 </body>
