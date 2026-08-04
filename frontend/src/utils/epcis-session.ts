@@ -1,3 +1,8 @@
+import {
+  buildSsccFromBase17,
+  gs1SsccCheckDigit,
+} from './sscc-check-digit'
+
 const GS1_BASE_URI = 'https://id.gs1.org/00'
 const SSCC_DIGITAL_LINK_PATTERN = /^https:\/\/id\.gs1\.org\/00\/\d{18}$/
 const SSCC_DIGITS_PATTERN = /^\d{18}$/
@@ -8,14 +13,7 @@ export interface EventSession {
   digitalLink: string
 }
 
-function gs1CheckDigit (base17: string): number {
-  let sum = 0
-  for (let i = 0; i < 17; i++) {
-    const digit = Number.parseInt(base17[16 - i] ?? '0', 10)
-    sum += digit * (i % 2 === 0 ? 3 : 1)
-  }
-  return (10 - (sum % 10)) % 10
-}
+export { gs1SsccCheckDigit } from './sscc-check-digit'
 
 export function isValidSsccDigits (digits: string): boolean {
   if (!SSCC_DIGITS_PATTERN.test(digits)) {
@@ -25,7 +23,7 @@ export function isValidSsccDigits (digits: string): boolean {
     return false
   }
   const base17 = digits.slice(0, 17)
-  return gs1CheckDigit(base17) === Number.parseInt(digits[17] ?? '-1', 10)
+  return gs1SsccCheckDigit(base17) === Number.parseInt(digits[17] ?? '-1', 10)
 }
 
 function cryptoRandomInt (max: number): number {
@@ -38,12 +36,12 @@ function buildSsccSerial (sequenceOffset = 0): string {
   const seconds = Math.floor(Date.now() / 1000)
   const timePart = seconds % 100_000
   const randomPart = (cryptoRandomInt(1000) + sequenceOffset) % 1000
-  return String(timePart * 1000 + randomPart).padStart(8, '0')
+  return String(timePart * 1000 + randomPart).padStart(9, '0')
 }
 
 function ssccDigitsFromSerial (serial: string): string {
   const base17 = `${SSCC_PREFIX}${serial}`
-  return `${base17}${gs1CheckDigit(base17)}`
+  return buildSsccFromBase17(base17)
 }
 
 export function generateSscc (): string {
