@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     cors_origins: str = "*"
     epcat_base_url: str = ""
+    aas_environment: str = "http://132.195.160.222:8081"
 
     model_config = SettingsConfigDict(
         env_file_encoding="utf-8",

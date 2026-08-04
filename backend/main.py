@@ -6,6 +6,11 @@ from fastapi import APIRouter, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
+from typing import Any
+
+from aas_scripts.aas_link import map_payload_to_aas
+from aas_scripts.basyx_components.pipeline_log import PipelineLog
+
 from config import get_settings
 from epcis.generator import generate_step_events, validate_sscc
 from epcis.session_store import (
@@ -115,6 +120,23 @@ def sscc_status(
     snapshot = get_sscc_snapshot(sscc)
     return SsccSnapshot(**snapshot)
 
+@api.post("/epcis-events")
+async def epcis_events(payload: dict[str, Any]) -> dict[str, Any]:
+    try:
+        settings.events_dir.mkdir(parents=True, exist_ok=True)
+        log = PipelineLog(settings.events_dir / "receiver-aas-link.log", echo=False)
+
+        results = await asyncio.to_thread(
+            map_payload_to_aas,
+            payload,
+            settings.aas_environment,
+            log,
+        )
+    except Exception as error:
+        logger.exception("AAS webhook mapping failed")
+        raise HTTPException(status_code=500, detail=str(error)) from error
+
+    return {"received": len(results), "results": results}
 
 @api.post("/trigger/{step_number}", response_model=TriggerResponse)
 async def trigger(step_number: int, body: TriggerRequest) -> TriggerResponse:
