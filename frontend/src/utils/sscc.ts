@@ -3,6 +3,7 @@ import { generateSscc, toDigitalLink } from '@/utils/epcis-session'
 export { generateSscc, toDigitalLink }
 
 export function createSsccSession (): { sscc: string, digitalLink: string } {
-  const sscc = generateSscc()
-  return { sscc, digitalLink: toDigitalLink(sscc) }
+  const digits = generateSscc()
+  const digitalLink = toDigitalLink(digits)
+  return { sscc: digits, digitalLink }
 }

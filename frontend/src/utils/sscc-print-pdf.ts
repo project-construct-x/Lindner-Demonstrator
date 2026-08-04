@@ -1,6 +1,11 @@
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 import { generateSsccBatch } from '@/utils/epcis-session'
+import {
+  SSCC_DIGITS_LENGTH,
+  isValidSsccDigits,
+  ssccDigitsFromDigitalLink,
+} from '@/utils/sscc-check-digit'
 
 const PAGE_WIDTH_MM = 210
 const PAGE_HEIGHT_MM = 297
@@ -14,10 +19,6 @@ const FIRST_PAGE_ROWS = Math.floor(
   (PAGE_HEIGHT_MM - MARGIN_MM * 2 - FIRST_PAGE_HEADER_MM) / CELL_HEIGHT_MM,
 )
 const OTHER_PAGE_ROWS = Math.floor((PAGE_HEIGHT_MM - MARGIN_MM * 2) / CELL_HEIGHT_MM)
-
-function ssccDigits (digitalLink: string): string {
-  return digitalLink.slice(digitalLink.lastIndexOf('/') + 1)
-}
 
 function pageLayout (index: number): {
   page: number
@@ -54,6 +55,13 @@ export async function downloadSsccPrintPdf (count: number): Promise<void> {
   let currentPage = -1
 
   for (let index = 0; index < ssccs.length; index += 1) {
+    const digitalLink = ssccs[index]!
+    const digits = ssccDigitsFromDigitalLink(digitalLink)
+
+    if (digits.length !== SSCC_DIGITS_LENGTH || !isValidSsccDigits(digits)) {
+      throw new Error(`Refusing to print invalid SSCC at index ${index}: ${digitalLink}`)
+    }
+
     const layout = pageLayout(index)
 
     if (layout.page !== currentPage) {
@@ -75,7 +83,7 @@ export async function downloadSsccPrintPdf (count: number): Promise<void> {
     const qrY = MARGIN_MM + layout.headerOffset + layout.row * CELL_HEIGHT_MM
     const qrX = cellX + (COL_WIDTH_MM - QR_SIZE_MM) / 2
 
-    const qrDataUrl = await QRCode.toDataURL(ssccs[index]!, {
+    const qrDataUrl = await QRCode.toDataURL(digitalLink, {
       errorCorrectionLevel: 'M',
       margin: 1,
       width: 256,
@@ -86,7 +94,7 @@ export async function downloadSsccPrintPdf (count: number): Promise<void> {
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(7)
     doc.text(
-      ssccDigits(ssccs[index]!),
+      digits,
       cellX + COL_WIDTH_MM / 2,
       qrY + QR_SIZE_MM + 4,
       { align: 'center', maxWidth: COL_WIDTH_MM - 4 },
@@ -95,7 +103,7 @@ export async function downloadSsccPrintPdf (count: number): Promise<void> {
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(5)
     doc.text(
-      ssccs[index]!,
+      digitalLink,
       cellX + COL_WIDTH_MM / 2,
       qrY + QR_SIZE_MM + 8,
       { align: 'center', maxWidth: COL_WIDTH_MM - 4 },

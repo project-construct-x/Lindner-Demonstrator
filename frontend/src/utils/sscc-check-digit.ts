@@ -1,12 +1,27 @@
+/**
+ * GS1 SSCC structure (18 digits total):
+ *   N1–N17  extension digit + company prefix + serial reference (17 digits)
+ *   N18     GS1 mod-10 check digit
+ *
+ * Enter N1–N17 in the GS1 AU calculator; N18 is computed from those 17 digits.
+ * @see https://www.gs1au.org/services/tools/check-digit-calculator
+ */
+export const SSCC_PREFIX = '04047111'
+export const SSCC_BASE_LENGTH = 17
+export const SSCC_DIGITS_LENGTH = 18
+export const GS1_SSCC_BASE_URI = 'https://id.gs1.org/00'
+
+const SSCC_DIGITS_PATTERN = /^\d{18}$/
+
 /** GS1 mod-10 check digit for the first 17 digits of an SSCC (N1–N17). */
 export function gs1SsccCheckDigit (base17: string): number {
-  if (base17.length !== 17) {
-    throw new Error(`SSCC base must be exactly 17 digits, got ${base17.length}`)
+  if (base17.length !== SSCC_BASE_LENGTH) {
+    throw new Error(`SSCC base must be exactly ${SSCC_BASE_LENGTH} digits, got ${base17.length}`)
   }
 
   let sum = 0
-  for (let i = 0; i < 17; i++) {
-    const digit = Number.parseInt(base17[16 - i] ?? '0', 10)
+  for (let i = 0; i < SSCC_BASE_LENGTH; i++) {
+    const digit = Number.parseInt(base17[SSCC_BASE_LENGTH - 1 - i] ?? '0', 10)
     sum += digit * (i % 2 === 0 ? 3 : 1)
   }
   return (10 - (sum % 10)) % 10
@@ -19,23 +34,60 @@ export function gs1SsccCheckDigit (base17: string): number {
  * @see https://www.gs1au.org/services/tools/check-digit-calculator
  */
 export function gs1SsccCheckDigitGs1Reference (base17: string): number {
-  if (base17.length !== 17) {
-    throw new Error(`SSCC base must be exactly 17 digits, got ${base17.length}`)
+  if (base17.length !== SSCC_BASE_LENGTH) {
+    throw new Error(`SSCC base must be exactly ${SSCC_BASE_LENGTH} digits, got ${base17.length}`)
   }
 
   let sum = 0
-  for (let i = 0; i < 17; i++) {
+  for (let i = 0; i < SSCC_BASE_LENGTH; i++) {
     const weight = i % 2 === 0 ? 3 : 1
     sum += Number.parseInt(base17[i] ?? '0', 10) * weight
   }
   return (10 - (sum % 10)) % 10
 }
 
-export function buildSsccFromBase17 (base17: string): string {
-  return `${base17}${gs1SsccCheckDigit(base17)}`
+export function hasValidSsccCheckDigit (digits: string): boolean {
+  if (!SSCC_DIGITS_PATTERN.test(digits)) {
+    return false
+  }
+  const base17 = digits.slice(0, SSCC_BASE_LENGTH)
+  return gs1SsccCheckDigit(base17) === Number.parseInt(digits[SSCC_BASE_LENGTH] ?? '-1', 10)
 }
 
-/** Known base17 → check digit pairs (verify at GS1 AU SSCC calculator). */
+export function isValidSsccDigits (digits: string, prefix = SSCC_PREFIX): boolean {
+  return hasValidSsccCheckDigit(digits) && digits.startsWith(prefix)
+}
+
+export function assertValidSsccDigits (digits: string, prefix = SSCC_PREFIX): void {
+  if (!isValidSsccDigits(digits, prefix)) {
+    throw new Error(
+      `Invalid SSCC: expected 17-digit base + check digit (${SSCC_DIGITS_LENGTH} digits total), got "${digits}"`,
+    )
+  }
+}
+
+export function buildSsccFromBase17 (base17: string): string {
+  if (!/^\d{17}$/.test(base17)) {
+    throw new Error(`SSCC base must be exactly ${SSCC_BASE_LENGTH} digits, got "${base17}"`)
+  }
+
+  const digits = `${base17}${gs1SsccCheckDigit(base17)}`
+  if (!hasValidSsccCheckDigit(digits)) {
+    throw new Error(`Failed to build valid SSCC from base17 "${base17}"`)
+  }
+  return digits
+}
+
+export function toSsccDigitalLink (digits: string): string {
+  assertValidSsccDigits(digits)
+  return `${GS1_SSCC_BASE_URI}/${digits}`
+}
+
+export function ssccDigitsFromDigitalLink (digitalLink: string): string {
+  const digits = digitalLink.slice(digitalLink.lastIndexOf('/') + 1)
+  assertValidSsccDigits(digits)
+  return digits
+}
 export const SSCC_CHECK_DIGIT_EXAMPLES = [
   {
     base17: '04047111681574983',
@@ -47,6 +99,12 @@ export const SSCC_CHECK_DIGIT_EXAMPLES = [
     base17: '04047111410764989',
     checkDigit: 2,
     full: '040471114107649892',
+    note: 'User-verified via GS1 AU calculator',
+  },
+  {
+    base17: '04047111041724879',
+    checkDigit: 4,
+    full: '040471110417248794',
     note: 'User-verified via GS1 AU calculator',
   },
   {

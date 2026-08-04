@@ -3,8 +3,10 @@ import {
   buildSsccFromBase17,
   gs1SsccCheckDigit,
   gs1SsccCheckDigitGs1Reference,
+  isValidSsccDigits,
 } from '../src/utils/sscc-check-digit.ts'
-import { generateSsccBatch, isValidSsccDigits } from '../src/utils/epcis-session.ts'
+
+import { generateSsccBatch } from '../src/utils/epcis-session.ts'
 
 let failed = 0
 

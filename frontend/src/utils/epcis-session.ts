@@ -1,30 +1,23 @@
 import {
+  SSCC_PREFIX,
   buildSsccFromBase17,
-  gs1SsccCheckDigit,
+  isValidSsccDigits,
+  toSsccDigitalLink,
 } from './sscc-check-digit'
 
-const GS1_BASE_URI = 'https://id.gs1.org/00'
 const SSCC_DIGITAL_LINK_PATTERN = /^https:\/\/id\.gs1\.org\/00\/\d{18}$/
 const SSCC_DIGITS_PATTERN = /^\d{18}$/
-const SSCC_PREFIX = '04047111'
 
 export interface EventSession {
   sscc: string
   digitalLink: string
 }
 
-export { gs1SsccCheckDigit } from './sscc-check-digit'
-
-export function isValidSsccDigits (digits: string): boolean {
-  if (!SSCC_DIGITS_PATTERN.test(digits)) {
-    return false
-  }
-  if (!digits.startsWith(SSCC_PREFIX)) {
-    return false
-  }
-  const base17 = digits.slice(0, 17)
-  return gs1SsccCheckDigit(base17) === Number.parseInt(digits[17] ?? '-1', 10)
-}
+export {
+  gs1SsccCheckDigit,
+  isValidSsccDigits,
+  toSsccDigitalLink as toDigitalLink,
+} from './sscc-check-digit'
 
 function cryptoRandomInt (max: number): number {
   const array = new Uint32Array(1)
@@ -32,20 +25,31 @@ function cryptoRandomInt (max: number): number {
   return array[0]! % max
 }
 
+function normalizeSerial (serial: string): string {
+  return serial.padStart(9, '0').slice(-9)
+}
+
 function buildSsccSerial (sequenceOffset = 0): string {
   const seconds = Math.floor(Date.now() / 1000)
   const timePart = seconds % 100_000
   const randomPart = (cryptoRandomInt(1000) + sequenceOffset) % 1000
-  return String(timePart * 1000 + randomPart).padStart(9, '0')
+  return normalizeSerial(String(timePart * 1000 + randomPart))
 }
 
 function ssccDigitsFromSerial (serial: string): string {
-  const base17 = `${SSCC_PREFIX}${serial}`
+  const base17 = `${SSCC_PREFIX}${normalizeSerial(serial)}`
   return buildSsccFromBase17(base17)
 }
 
 export function generateSscc (): string {
-  return ssccDigitsFromSerial(buildSsccSerial())
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const digits = ssccDigitsFromSerial(buildSsccSerial(attempt))
+    if (isValidSsccDigits(digits)) {
+      return digits
+    }
+  }
+
+  throw new Error('Failed to generate a valid 18-digit SSCC')
 }
 
 export function generateSsccBatch (count: number): string[] {
@@ -57,20 +61,31 @@ export function generateSsccBatch (count: number): string[] {
   const results: string[] = []
 
   for (let offset = 0; results.length < count; offset += 1) {
-    const digits = ssccDigitsFromSerial(buildSsccSerial(offset))
+    const digits = generateSsccFromOffset(offset)
     if (seen.has(digits)) {
       continue
     }
 
     seen.add(digits)
-    results.push(toDigitalLink(digits))
+    results.push(toSsccDigitalLink(digits))
+  }
+
+  if (results.length < count) {
+    throw new Error(`Failed to generate ${count} unique valid SSCCs`)
   }
 
   return results
 }
 
-export function toDigitalLink (sscc: string): string {
-  return `${GS1_BASE_URI}/${sscc}`
+function generateSsccFromOffset (offset: number): string {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const digits = ssccDigitsFromSerial(buildSsccSerial(offset + attempt))
+    if (isValidSsccDigits(digits)) {
+      return digits
+    }
+  }
+
+  throw new Error('Failed to generate a valid 18-digit SSCC')
 }
 
 export function normalizeSsccDigitalLink (value: string): string | null {
@@ -93,7 +108,7 @@ export function normalizeSsccDigitalLink (value: string): string | null {
     if (!isValidSsccDigits(trimmed)) {
       return null
     }
-    return toDigitalLink(trimmed)
+    return toSsccDigitalLink(trimmed)
   }
 
   const embeddedDigits = trimmed.match(/\d{18}/)?.[0]
@@ -101,22 +116,26 @@ export function normalizeSsccDigitalLink (value: string): string | null {
     if (!isValidSsccDigits(embeddedDigits)) {
       return null
     }
-    return toDigitalLink(embeddedDigits)
+    return toSsccDigitalLink(embeddedDigits)
   }
 
   return null
 }
 
 export function createEventSessionFromDigitalLink (digitalLink: string): EventSession {
+  const normalized = normalizeSsccDigitalLink(digitalLink)
+  if (!normalized) {
+    throw new Error('Invalid SSCC digital link')
+  }
+
   return {
-    sscc: digitalLink,
-    digitalLink,
+    sscc: normalized,
+    digitalLink: normalized,
   }
 }
 
 export function createEventSession (): EventSession {
-  const sscc = generateSscc()
-  const digitalLink = toDigitalLink(sscc)
+  const digitalLink = toSsccDigitalLink(generateSscc())
 
   return {
     sscc: digitalLink,
