@@ -24,7 +24,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY --from=builder /install /usr/local
 COPY main.py config.py models.py health.py subscriptions.py .env.production ./
 COPY epcis/ epcis/
-COPY aas_scripts/ aas_scripts/
 
 EXPOSE 8000
 
