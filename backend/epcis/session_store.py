@@ -1,17 +1,16 @@
-import random
-import string
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 
 from epcis.steps import get_step_by_number
 from models import EventSession
 
-LGTIN_GTIN_1 = "04047111793267"
-LGTIN_GTIN_2 = "04047111288459"
-DESADV_PREFIX = "40471113333333"
-PO_PREFIX = "40471112222221"
-LOT_CHARS = string.digits + string.ascii_lowercase
+LGTIN_GTIN_1 = "04047111100751"
+LGTIN_GTIN_2 = "04047111100768"
+DESADV_PREFIX = "40471112"
+PO_PREFIX = "40471110"
 
 EVENT_TIME_ZONE_OFFSET = "+02:00"
+EVENT_TIME_ZONE = timezone(timedelta(hours=2))
 MAX_STEP_NUMBER = 7
 
 _sessions: dict[str, "_StoredSession"] = {}
@@ -27,35 +26,42 @@ class _StoredSession:
     completed_steps: set[int] = field(default_factory=set)
 
 
-def _random_token(length: int) -> str:
-    return "".join(random.choice(LOT_CHARS) for _ in range(length))
-
-
 def _to_lgtin(gtin: str, lot: str) -> str:
     return f"https://id.gs1.org/01/{gtin}/10/{lot}"
 
 
-def _generate_biz_transaction(prefix: str) -> str:
-    return f"https://id.gs1.org/253/{prefix}{_random_token(10)}"
+def _biz_transaction_from_datetime(prefix: str, triggered_at: datetime) -> str:
+    local_time = triggered_at.astimezone(EVENT_TIME_ZONE)
+    milliseconds = local_time.microsecond // 1000
+    reference = local_time.strftime("%Y%m%d%H%M%S") + f"{milliseconds:03d}"
+    return f"https://id.gs1.org/253/{prefix}{reference}"
 
 
-def ensure_material_fields(sscc: str) -> None:
+def _lot_from_datetime(triggered_at: datetime) -> str:
+    local_time = triggered_at.astimezone(EVENT_TIME_ZONE)
+    milliseconds = local_time.microsecond // 1000
+    return local_time.strftime("%Y%m%d%H%M%S") + f"{milliseconds:03d}"
+
+
+def ensure_material_fields(sscc: str, triggered_at: datetime | None = None) -> None:
     session = _sessions.setdefault(sscc, _StoredSession(sscc=sscc))
     if session.lgtin1 is not None:
         return
 
-    lot = _random_token(4)
+    lot = _lot_from_datetime(triggered_at or datetime.now(timezone.utc))
     session.lgtin1 = _to_lgtin(LGTIN_GTIN_1, lot)
     session.lgtin2 = _to_lgtin(LGTIN_GTIN_2, lot)
-    session.po = _generate_biz_transaction(PO_PREFIX)
 
 
-def ensure_desadv(sscc: str) -> None:
+def ensure_step1_transactions(sscc: str, triggered_at: datetime | None = None) -> None:
     session = _sessions.setdefault(sscc, _StoredSession(sscc=sscc))
-    if session.desadv is not None:
-        return
+    when = triggered_at or datetime.now(timezone.utc)
 
-    session.desadv = _generate_biz_transaction(DESADV_PREFIX)
+    if session.po is None:
+        session.po = _biz_transaction_from_datetime(PO_PREFIX, when)
+
+    if session.desadv is None:
+        session.desadv = _biz_transaction_from_datetime(DESADV_PREFIX, when)
 
 
 def get_session(sscc: str) -> EventSession:

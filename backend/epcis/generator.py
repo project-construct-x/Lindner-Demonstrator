@@ -11,8 +11,8 @@ from config import EPCIS_TEMPLATES_DIR, EVENTS_DIR
 from epcis.capture import send_to_capture
 from epcis.session_store import (
     EVENT_TIME_ZONE_OFFSET,
-    ensure_desadv,
     ensure_material_fields,
+    ensure_step1_transactions,
     get_session,
     step_needs_material,
 )
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 DOCUMENT_TEMPLATE_PATH = EPCIS_TEMPLATES_DIR / "document.json"
 
 SSCC_URI_PATTERN = re.compile(r"^https://id\.gs1\.org/00/\d{18}$")
+SSCC_PREFIX = "04047111"
 LGTIN_URI_PATTERN = re.compile(
     r"^https://id\.gs1\.org/01/\d{14}/10/[0-9a-z]+$"
 )
@@ -37,11 +38,28 @@ class _RenderedEventContext:
     eventID: str
 
 
+def _gs1_check_digit(base17: str) -> int:
+    total = sum(
+        int(base17[16 - i]) * (3 if i % 2 == 0 else 1)
+        for i in range(17)
+    )
+    return (10 - (total % 10)) % 10
+
+
 def validate_sscc(sscc: str) -> None:
     if not SSCC_URI_PATTERN.match(sscc):
         raise ValueError(
             "SSCC must be a GS1 Digital Link URI: https://id.gs1.org/00/{18-digit-sscc}"
         )
+
+    digits = sscc.rsplit("/00/", maxsplit=1)[-1]
+    if not digits.startswith(SSCC_PREFIX):
+        raise ValueError(f"SSCC must start with prefix {SSCC_PREFIX}")
+
+    base17 = digits[:17]
+    expected_check_digit = _gs1_check_digit(base17)
+    if int(digits[17]) != expected_check_digit:
+        raise ValueError("SSCC check digit is invalid")
 
 
 def validate_session(session: EventSession) -> None:
@@ -152,20 +170,20 @@ def generate_step_events(
     sscc: str,
 ) -> tuple[dict, Path]:
     validate_sscc(sscc)
+
+    triggered_at = datetime.now(timezone.utc)
     if step_needs_material(step.number):
-        ensure_material_fields(sscc)
+        ensure_material_fields(sscc, triggered_at)
+    if step.number == 1:
+        ensure_step1_transactions(sscc, triggered_at)
 
     sscc_dir = EVENTS_DIR / sscc_folder_name(sscc)
     sscc_dir.mkdir(parents=True, exist_ok=True)
 
     template_count = len(step.template_files)
-    triggered_at = datetime.now(timezone.utc)
     events: list[dict] = []
 
     for index, template_file in enumerate(step.template_files):
-        if template_file == "04.json":
-            ensure_desadv(sscc)
-
         session = get_session(sscc)
         validate_session(session)
 
