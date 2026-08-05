@@ -20,9 +20,9 @@ SPERR_DAUER = 30  # Sekunden
 
 # IP-Adressen der drei Raspberry Pis für die Gesamtübersicht (/all)
 PI_IPS = {
-    1: "192.168.0.150",
-    2: "192.168.0.151",
-    3: "192.168.0.152"
+    1: "132.195.146.11",
+    2: "132.195.146.194",
+    3: "132.195.146.144"
 }
 
 # Liest Pi-Nummer aus dem Startbefehl (z.B. python3 qr_scanner.py 2), sonst Standard = 1
@@ -226,18 +226,6 @@ def index():
             width: 100%;
             height: auto;
         }}
-        .status-bar {{
-            margin-top: 1.25rem;
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            font-size: 0.85rem;
-            color: #cbd5e1;
-        }}
-        .status-item {{ display: flex; align-items: center; gap: 0.4rem; }}
-        .dot {{ width: 10px; height: 10px; border-radius: 50%; display: inline-block; }}
-        .dot-green {{ background: #22c55e; box-shadow: 0 0 8px #22c55e; }}
-        .dot-red {{ background: #ef4444; box-shadow: 0 0 8px #ef4444; }}
         .nav-link {{
             margin-top: 1rem;
             display: inline-block;
@@ -266,6 +254,7 @@ def index():
         <div class="video-box">
             <img src="/video_feed" alt="Kamera Live-Stream">
         </div>
+        <br>
         <a href="/all" class="nav-link">🖥️ Zur Gesamtübersicht aller 3 Kameras</a>
     </div>
 </body>
