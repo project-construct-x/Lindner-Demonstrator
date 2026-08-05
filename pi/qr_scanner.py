@@ -4,13 +4,14 @@ import time
 import json
 import os
 import sys
+import glob
 import threading
 import requests
 import urllib3
 from datetime import datetime
 from flask import Flask, Response
 
-# Ungesicherte HTTPS-Warnungen (wegen IP-Aufruf) stummschalten
+# Ungesicherte HTTPS-Warnungen stummschalten
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- KONFIGURATION & PI-AUSWAHL ---
@@ -18,14 +19,6 @@ API_BASE_URL = "https://demo.dpp.tmdt.uni-wuppertal.de/api/trigger"
 LOG_DATEI = "scan_log.json"
 SPERR_DAUER = 30  # Sekunden
 
-# IP-Adressen der drei Raspberry Pis für die Gesamtübersicht (/all)
-PI_IPS = {
-    1: "132.195.146.11",
-    2: "132.195.146.194",
-    3: "132.195.146.144"
-}
-
-# Liest Pi-Nummer aus dem Startbefehl (z.B. python3 qr_scanner.py 2), sonst Standard = 1
 STEP_NUMBER = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 1
 STEP_NAMES = {
     1: "Schritt 1: Ausgang beim Hersteller",
@@ -33,12 +26,6 @@ STEP_NAMES = {
     3: "Schritt 3: Wareneingang beim Empfänger"
 }
 STEP_BEZEICHNUNG = STEP_NAMES.get(STEP_NUMBER, f"Schritt {STEP_NUMBER}")
-
-# Hilfsfunktion: Eigenen Pi per relativem Pfad laden, andere per IP
-def get_stream_url(pi_id):
-    if pi_id == STEP_NUMBER:
-        return "/video_feed"
-    return f"http://{PI_IPS.get(pi_id, '127.0.0.1')}:5000/video_feed"
 
 # --- GPIO LED SETUP ---
 try:
@@ -57,7 +44,6 @@ app = Flask(__name__)
 gescannte_codes = {}
 
 def pulse_led(led, duration):
-    """Schaltet eine LED für X Sekunden im Hintergrund an, ohne das Videobild zu blockieren."""
     if GPIO_ACTIVE:
         led.on()
         threading.Timer(duration, led.off).start()
@@ -89,12 +75,84 @@ def send_sscc_trigger(sscc_code):
     except Exception as e:
         print(f"❌ API-Fehler: {e}")
 
-# Kamera & QR-Detector initialisieren
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-cap.set(cv2.CAP_PROP_FPS, 60)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+def get_placeholder_frame(text="Kamera getrennt..."):
+    img = np.zeros((480, 640, 3), np.uint8)
+    cv2.putText(img, text, (100, 240), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 165, 255), 2)
+    _, buffer = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 50])
+    return buffer.tobytes()
+
+# --- OPTIMIERTER KAMERA-STREAM ---
+class SafeCameraStream:
+    def __init__(self):
+        self.cap = cv2.VideoCapture()
+        self.frame = None
+        self.is_connected = False
+        self.lock = threading.Lock()
+        self.running = True
+        self.placeholder = get_placeholder_frame(f"Pi #{STEP_NUMBER}: Warte auf Kamera...")
+        self.thread = threading.Thread(target=self._update_loop, daemon=True)
+        self.thread.start()
+
+    def _try_open_camera(self):
+        # Schnelle Systemabfrage statt blinder Loop über Indizes
+        devices = sorted(glob.glob('/dev/video*'))
+        if not devices:
+            return False
+
+        for dev_path in devices:
+            try:
+                idx = int(dev_path.replace('/dev/video', ''))
+                self.cap.open(idx, cv2.CAP_V4L2)
+                if self.cap.isOpened():
+                    # Puffergröße auf 1 setzen verhindert Frame-Stau und Latenz!
+                    self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                    self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                    self.cap.set(cv2.CAP_PROP_FPS, 30)
+                    
+                    ret, test_frame = self.cap.read()
+                    if ret and test_frame is not None and test_frame.size > 0:
+                        print(f"🎥 Kamera erfolgreich auf {dev_path} verbunden.")
+                        return True
+                    self.cap.release()
+            except Exception:
+                if self.cap.isOpened():
+                    self.cap.release()
+        return False
+
+    def _update_loop(self):
+        while self.running:
+            if not self.is_connected:
+                if self._try_open_camera():
+                    self.is_connected = True
+                else:
+                    time.sleep(3)  # Entlastet CPU bei fehlender Kamera
+                    continue
+
+            try:
+                ret, frame = self.cap.read()
+                if ret and frame is not None and frame.size > 0:
+                    with self.lock:
+                        self.frame = frame
+                else:
+                    print("⚠️ Kameraverbindung verloren.")
+                    self.is_connected = False
+                    self.cap.release()
+                    time.sleep(2)
+            except Exception:
+                self.is_connected = False
+                self.cap.release()
+                time.sleep(2)
+
+            time.sleep(0.005)
+
+    def read(self):
+        with self.lock:
+            if not self.is_connected or self.frame is None:
+                return None
+            return self.frame.copy()
+
+cam_stream = SafeCameraStream()
 qr_detector = cv2.QRCodeDetector()
 
 def generate_frames():
@@ -102,20 +160,21 @@ def generate_frames():
     frame_counter = 0
 
     while True:
-        ret, frame = cap.read()
-        if not ret:
-            time.sleep(0.01)
+        frame = cam_stream.read()
+        
+        if frame is None:
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + cam_stream.placeholder + b'\r\n')
+            time.sleep(0.2)
             continue
 
         aktuell = time.time()
         frame_counter += 1
-
-        # Veraltete Sperren bereinigen
         gescannte_codes = {c: t for c, t in gescannte_codes.items() if aktuell - t < SPERR_DAUER}
 
-        # QR-Erkennung in jedem 2. Frame
-        if frame_counter % 2 == 0:
-            data, points, _ = qr_detector.detectAndDecode(frame)
+        # QR-Erkennung alle 6 Frames
+        if frame_counter % 6 == 0:
+            small_frame = cv2.resize(frame, (320, 240))
+            data, points, _ = qr_detector.detectAndDecode(small_frame)
             data = data.strip() if data else ""
 
             if data:
@@ -130,15 +189,15 @@ def generate_frames():
                     pulse_led(led_sperre, 0.5)
 
                 if points is not None:
-                    pts = points[0].astype(int)
+                    pts = (points[0] * 2).astype(int)
                     for i in range(len(pts)):
                         cv2.line(frame, tuple(pts[i]), tuple(pts[(i + 1) % len(pts)]), (0, 255, 0), 3)
 
-        ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        ret, buffer = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 65])
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-        time.sleep(0.001)
+        time.sleep(0.01)
 
-# --- ROUTE 1: EINZEL-DASHBOARD DES PIS ---
+# --- ROUTE: EINZEL-DASHBOARD (NUR LOKALER STREAM) ---
 @app.route('/')
 def index():
     return f"""<!DOCTYPE html>
@@ -183,15 +242,8 @@ def index():
             gap: 0.75rem;
             text-align: left;
         }}
-        .logo {{
-            height: 38px;
-            width: auto;
-            object-fit: contain;
-        }}
-        .brand-text {{
-            display: flex;
-            flex-direction: column;
-        }}
+        .logo {{ height: 38px; width: auto; object-fit: contain; }}
+        .brand-text {{ display: flex; flex-direction: column; }}
         .project-name {{
             font-size: 0.75rem;
             font-weight: 700;
@@ -199,47 +251,34 @@ def index():
             letter-spacing: 1.2px;
             color: #94a3b8;
         }}
-        .title {{ 
-            font-size: 1.15rem; 
-            font-weight: 600; 
-            color: #38bdf8; 
-        }}
+        .title {{ font-size: 1.15rem; font-weight: 600; color: #38bdf8; }}
         .badge {{
-            background: #E94509; /* Projekt Orange */
+            background: #E94509;
             color: white;
             padding: 0.3rem 0.85rem;
             border-radius: 9999px;
             font-size: 0.85rem;
             font-weight: 600;
         }}
-        .step-info {{
-            font-size: 1rem;
-            color: #94a3b8;
-            margin-bottom: 1.25rem;
-        }}
+        .step-info {{ font-size: 1rem; color: #94a3b8; margin-bottom: 1.25rem; }}
         .video-box {{
             position: relative;
             border-radius: 8px;
             border: 2px solid #3b82f6;
             background: #000;
-            display: inline-block;
+            display: block;
             overflow: hidden;
             width: 100%;
             max-width: 640px;
+            margin: 0 auto;
+            aspect-ratio: 4 / 3;
         }}
         .video-box img {{
-            display: block;
             width: 100%;
-            height: auto;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }}
-        .nav-link {{
-            margin-top: 1rem;
-            display: inline-block;
-            color: #38bdf8;
-            text-decoration: none;
-            font-size: 0.85rem;
-        }}
-        .nav-link:hover {{ text-decoration: underline; }}
     </style>
 </head>
 <body>
@@ -259,136 +298,6 @@ def index():
         </div>
         <div class="video-box">
             <img src="/video_feed" alt="Kamera Live-Stream">
-        </div>
-        <br>
-        <a href="/all" class="nav-link">🖥️ Zur Gesamtübersicht aller 3 Kameras</a>
-    </div>
-</body>
-</html>"""
-
-# --- ROUTE 2: MULTI-STREAM GESAMTÜBERSICHT ALLER 3 PIS ---
-@app.route('/all')
-@app.route('/overview')
-def overview():
-    return f"""<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Construct-X - Live Monitoring (Schritt 1 - 3)</title>
-    <style>
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{ 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            background: #0f172a; 
-            color: #f8fafc; 
-            padding: 2rem 1rem;
-            min-height: 100vh;
-        }}
-        .header-main {{
-            text-align: center;
-            margin-bottom: 2rem;
-        }}
-        .header-main h1 {{
-            color: #38bdf8;
-            font-size: 1.8rem;
-            margin-bottom: 0.5rem;
-        }}
-        .header-main p {{
-            color: #94a3b8;
-            font-size: 0.95rem;
-        }}
-        .grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 1.5rem;
-            max-width: 1400px;
-            margin: 0 auto;
-        }}
-        .cam-card {{
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 1.25rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }}
-        .cam-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            margin-bottom: 0.75rem;
-        }}
-        .badge {{
-            background: #E94509;
-            color: white;
-            padding: 0.2rem 0.65rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }}
-        .step-title {{
-            font-size: 0.9rem;
-            color: #cbd5e1;
-            font-weight: 600;
-        }}
-        .video-box {{
-            width: 100%;
-            border-radius: 8px;
-            border: 2px solid #3b82f6;
-            background: #000;
-            overflow: hidden;
-            aspect-ratio: 4 / 3;
-        }}
-        .video-box img {{
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }}
-    </style>
-</head>
-<body>
-    <div class="header-main">
-        <h1>Construct-X Gesamtsystem Monitoring</h1>
-        <p>Live-Kamerastreams aller drei Prozessschritte</p>
-    </div>
-
-    <div class="grid">
-        <!-- Kamera 1 -->
-        <div class="cam-card">
-            <div class="cam-header">
-                <span class="step-title">{STEP_NAMES[1]}</span>
-                <span class="badge">Pi #1</span>
-            </div>
-            <div class="video-box">
-                <img src="{get_stream_url(1)}" alt="Pi 1 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 1 nicht erreichbar';">
-            </div>
-        </div>
-
-        <!-- Kamera 2 -->
-        <div class="cam-card">
-            <div class="cam-header">
-                <span class="step-title">{STEP_NAMES[2]}</span>
-                <span class="badge">Pi #2</span>
-            </div>
-            <div class="video-box">
-                <img src="{get_stream_url(2)}" alt="Pi 2 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 2 nicht erreichbar';">
-            </div>
-        </div>
-
-        <!-- Kamera 3 -->
-        <div class="cam-card">
-            <div class="cam-header">
-                <span class="step-title">{STEP_NAMES[3]}</span>
-                <span class="badge">Pi #3</span>
-            </div>
-            <div class="video-box">
-                <img src="{get_stream_url(3)}" alt="Pi 3 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 3 nicht erreichbar';">
-            </div>
         </div>
     </div>
 </body>
