@@ -34,6 +34,12 @@ STEP_NAMES = {
 }
 STEP_BEZEICHNUNG = STEP_NAMES.get(STEP_NUMBER, f"Schritt {STEP_NUMBER}")
 
+# Hilfsfunktion: Eigenen Pi per relativem Pfad laden, andere per IP
+def get_stream_url(pi_id):
+    if pi_id == STEP_NUMBER:
+        return "/video_feed"
+    return f"http://{PI_IPS.get(pi_id, '127.0.0.1')}:5000/video_feed"
+
 # --- GPIO LED SETUP ---
 try:
     from gpiozero import LED
@@ -359,7 +365,7 @@ def overview():
                 <span class="badge">Pi #1</span>
             </div>
             <div class="video-box">
-                <img src="http://{PI_IPS[1]}:5000/video_feed" alt="Pi 1 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 1 nicht erreichbar';">
+                <img src="{get_stream_url(1)}" alt="Pi 1 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 1 nicht erreichbar';">
             </div>
         </div>
 
@@ -370,7 +376,7 @@ def overview():
                 <span class="badge">Pi #2</span>
             </div>
             <div class="video-box">
-                <img src="http://{PI_IPS[2]}:5000/video_feed" alt="Pi 2 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 2 nicht erreichbar';">
+                <img src="{get_stream_url(2)}" alt="Pi 2 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 2 nicht erreichbar';">
             </div>
         </div>
 
@@ -381,7 +387,7 @@ def overview():
                 <span class="badge">Pi #3</span>
             </div>
             <div class="video-box">
-                <img src="http://{PI_IPS[3]}:5000/video_feed" alt="Pi 3 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 3 nicht erreichbar';">
+                <img src="{get_stream_url(3)}" alt="Pi 3 Live-Stream" onerror="this.src=''; this.alt='⚠️ Pi 3 nicht erreichbar';">
             </div>
         </div>
     </div>
