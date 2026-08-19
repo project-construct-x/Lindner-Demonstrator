@@ -1,21 +1,37 @@
 {
-    "@context": [
-      "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
-    ],
-    "type": "ObjectEvent",
-    "action": "OBSERVE",
-    "bizStep": "receiving",
-    "disposition": "in_progress",
-    "epcList": [
-      "https://id.gs1.org/00/040471116815749833"
-    ],
-    "eventTime": "2026-04-17T14:00:00.000Z",
-    "eventTimeZoneOffset": "+02:00",
-    "readPoint": {
-      "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
-    },
-    "bizLocation": {
-      "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
-    },
-    "eventID": "urn:uuid:b2c3d4e5-f6a7-4890-b123-456789abcdef0"
-  }
+  "@context": [
+    "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+  ],
+  "type": "ObjectEvent",
+  "action": "OBSERVE",
+  "bizStep": "receiving",
+  "disposition": "in_progress",
+  "epcList": ["https://id.gs1.org/00/040471116815749833"],
+  "eventTime": "2026-04-17T14:00:00.000Z",
+  "eventTimeZoneOffset": "+02:00",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+  },
+  "bizLocation": {
+    "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+  },
+  "sensorElementList": [
+    {
+      "sensorReport": [
+        {
+          "type": "gs1:Mass",
+          "cx:property": "co2e",
+          "value": 16.52,
+          "uom": "KGM"
+        },
+        {
+          "type": "gs1:Energy",
+          "cx:property": "energyConsumption",
+          "value": 42,
+          "uom": "KWH"
+        }
+      ]
+    }
+  ],
+  "eventID": "urn:uuid:b2c3d4e5-f6a7-4890-b123-456789abcdef0"
+}

@@ -1,47 +1,44 @@
 {
-    "@context": [
-      "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
-      {
-        "cx": "https://cx.com/epcis/cx-context.jsonld"
-      }
-    ],
-    "type": "AggregationEvent",
-    "action": "ADD",
-    "bizStep": "packing",
-    "disposition": "in_progress",
-    "parentID": "https://id.gs1.org/00/040471116815749833",
-    "childQuantityList": [
+  "@context": [
+    "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+  ],
+  "type": "AggregationEvent",
+  "action": "ADD",
+  "bizStep": "packing",
+  "disposition": "in_progress",
+  "parentID": "https://id.gs1.org/00/040471116815749833",
+  "childQuantityList": [
+    {
+      "epcClass": "https://id.gs1.org/01/04047111793267/10/1a2b",
+      "quantity": 13
+    },
+    {
+      "epcClass": "https://id.gs1.org/01/04047111288459/10/3c4d",
+      "quantity": 39
+    }
+  ],
+  "eventTime": "2026-04-16T14:04:53.369Z",
+  "eventTimeZoneOffset": "+02:00",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111135074/254/9z8y"
+  },
+  "sensorElementList": [
+    {
+      "sensorReport": [
         {
-          "epcClass": "https://id.gs1.org/01/04047111793267/10/1a2b",
-          "quantity": 13
+          "type": "gs1:Mass",
+          "cx:property": "co2e",
+          "value": 16.52,
+          "uom": "KGM"
         },
         {
-          "epcClass": "https://id.gs1.org/01/04047111288459/10/3c4d",
-          "quantity": 39
+          "type": "gs1:Energy",
+          "cx:property": "energyConsumption",
+          "value": 42,
+          "uom": "KWH"
         }
-    ],
-    "eventTime": "2026-04-16T14:04:53.369Z",
-    "eventTimeZoneOffset": "+02:00",
-    "readPoint": {
-      "id": "https://id.gs1.org/414/4047111135074/254/9z8y"
-    },
-    "sensorElementList": [
-      {
-        "sensorReport": [
-          {
-            "type": "gs1:Mass",
-            "cx:property": "co2e",
-            "value": 16.52,
-            "uom": "KGM"
-          },
-          {
-            "type": "gs1:Energy",
-            "cx:property": "energyConsumption",
-            "value": 42,
-            "uom": "KWH"
-          }
-        ]
-      }
-    ],
-    "eventID": "urn:uuid:efdb473f-371c-4e78-a981-3689911c13cb"
-  }
+      ]
+    }
+  ],
+  "eventID": "urn:uuid:efdb473f-371c-4e78-a981-3689911c13cb"
+}
