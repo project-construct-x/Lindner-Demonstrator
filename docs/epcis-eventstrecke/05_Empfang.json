@@ -7,7 +7,14 @@
     "bizStep": "receiving",
     "disposition": "in_progress",
     "epcList": [
-      "https://id.gs1.org/253/40471113333333d3e4s4d5v"
+          "https://id.gs1.org/00/040471116815749833",
+          ...
+    ],
+    "bizTransactionList": [
+        {
+          "type": "desadv",
+          "bizTransaction": "https://id.gs1.org/253/40471113333333d3e4s4d5v"
+        }
     ],
     "eventTime": "2026-04-17T14:00:00.000Z",
     "eventTimeZoneOffset": "+02:00",
