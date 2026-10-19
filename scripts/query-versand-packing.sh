@@ -8,7 +8,7 @@ set -euo pipefail
 
 EPCAT_URL="${EPCAT_URL:-https://epcat2.construct-x.prod-k8s.eecc.de}"
 EPCAT_URL="${EPCAT_URL%/}"
-DESADV="${1:-${DESADV:-https://id.gs1.org/253/40471113333333d3e4s4d5v}}"
+DESADV="${1:-${DESADV:-https://id.gs1.org/253/4047111220260806151933504}}"
 
 auth=()
 if [[ -n "${EPCAT_TOKEN:-}" ]]; then
