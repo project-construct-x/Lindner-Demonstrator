@@ -1,0 +1,19 @@
+{
+  "@context": [
+    "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+  ],
+  "type": "ObjectEvent",
+  "action": "OBSERVE",
+  "bizStep": "storing",
+  "disposition": "in_progress",
+  "epcList": ["https://id.gs1.org/00/040471116815749833"],
+  "eventTime": "2026-04-17T16:00:00.000Z",
+  "eventTimeZoneOffset": "+02:00",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111987654/254/7k8m"
+  },
+  "bizLocation": {
+    "id": "https://id.gs1.org/414/4047111987654/254/7k8m"
+  },
+  "eventID": "urn:uuid:b5c6d7e8-f9a0-4b12-c345-6789abcdef05"
+}
