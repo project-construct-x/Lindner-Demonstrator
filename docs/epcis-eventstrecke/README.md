@@ -2,7 +2,7 @@
 
 These JSON files are the event shapes for the Lindner material path. Ingestion raises one Fertigung and one Produktion for the ordered quantities, then four packing events and two dispatch advices so two deliveries can each carry two pallets. On site, each delivery is received and unpacked. Both deliveries then join for one Umlagerung and one Montage.
 
-Files that are raised more than once contain a JSON array of those events, in time order. `02b_Produktion.json`, `07a_Demontage.json`, `07b_Packen.json`, `08_Versand_an_Lindner.json`, and `09_Empfang_bei_Lindner.json` continue the return path and are not part of the graph below. `lindner.zip` is an extra sample. `backend/epcis-original/` is a separate reference copy and is not loaded at runtime.
+Files that are raised more than once contain a JSON array of those events, in time order. `02b_Produktion.json`, `09_Demontage.json`, `10_Packen.json`, `11_Versand_an_Lindner.json`, and `12_Empfang_bei_Lindner.json` continue the return path and are not part of the graph below. `lindner.zip` is an extra sample. `backend/epcis-original/` is a separate reference copy and is not loaded at runtime.
 
 ## Ingestion
 
@@ -14,10 +14,10 @@ Fertigung ties the purchase order to both class quantities. Produktion creates t
 | `02a_Produktion.json` | 1      | Creates those same quantities                              |
 | `03_Packen.json`      | 4      | Each SSCC holds 10. SSCC 1 and 3 are A, SSCC 2 and 4 are B |
 | `04_Versand.json`     | 2      | DESADV 1 ships SSCC 1+2. DESADV 2 ships SSCC 3+4           |
-| `05a_Empfang.json`    | 2      | One receiving event per DESADV, on the construction site   |
-| `06a_Entpacken.json`  | 4      | Removes 10 from each SSCC                                  |
-| `05b_Umlagerung.json` | 1      | Both deliveries join. A×20 and B×20 move to storage        |
-| `06b_Montage.json`    | 1      | After Umlagerung. Installs A×20 and B×20 in a room         |
+| `05_Empfang.json`     | 2      | One receiving event per DESADV, on the construction site   |
+| `06_Entpacken.json`   | 4      | Removes 10 from each SSCC                                  |
+| `07_Umlagerung.json`  | 1      | Both deliveries join. A×20 and B×20 move to storage        |
+| `08_Montage.json`     | 1      | After Umlagerung. Installs A×20 and B×20 in a room         |
 
 LGTIN A is `01/04047111793267/10/1a2b`. LGTIN B is `01/04047111288459/10/3c4d`. Both quantities are 20, packed as 10 per pallet.
 
@@ -52,14 +52,14 @@ flowchart TB
   end
 
   subgraph receiving1 ["Receiving 1"]
-    recv1["05a_Empfang.json<br/>delivery received on site"]
-    unpack1["06a_Entpacken.json<br/>SSCC 1 × 10, SSCC 2 × 10"]
+    recv1["05_Empfang.json<br/>delivery received on site"]
+    unpack1["06_Entpacken.json<br/>SSCC 1 × 10, SSCC 2 × 10"]
     recv1 --> unpack1
   end
 
   subgraph receiving2 ["Receiving 2"]
-    recv2["05a_Empfang.json<br/>delivery received on site"]
-    unpack2["06a_Entpacken.json<br/>SSCC 3 × 10, SSCC 4 × 10"]
+    recv2["05_Empfang.json<br/>delivery received on site"]
+    unpack2["06_Entpacken.json<br/>SSCC 3 × 10, SSCC 4 × 10"]
     recv2 --> unpack2
   end
 
@@ -71,7 +71,7 @@ flowchart TB
   prod --> packA2
   prod --> packB2
 
-  unpack1 --> store["05b_Umlagerung.json<br/>A × 20 and B × 20 → storage"]
+  unpack1 --> store["07_Umlagerung.json<br/>A × 20 and B × 20 → storage"]
   unpack2 --> store
-  store --> room["06b_Montage.json<br/>A × 20 and B × 20 → room"]
+  store --> room["08_Montage.json<br/>A × 20 and B × 20 → room"]
 ```
