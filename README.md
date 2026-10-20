@@ -2,7 +2,7 @@
 
 Demo app for the **Construct-X Dataspace**: it simulates tracking construction materials through their lifecycle using GS1 identifiers and EPCIS 2.0 events.
 
-The Vue frontend generates a session with SSCC, LGTINs, and business transactions, displays a QR code, and walks through seven lifecycle steps (Einbau / Rückbau). Each step triggers the FastAPI backend to:
+The Vue frontend generates an SSCC Digital Link, displays it as a QR code, and walks through seven lifecycle steps (Einbau / Rückbau). Each step triggers the FastAPI backend to:
 
 1. Render one or more EPCIS events from JSON templates
 2. Wrap them in an `EPCISDocument`
@@ -74,4 +74,4 @@ docs/                  Detailed development documentation
 
 ## Documentation
 
-For architecture, API details, lifecycle steps, EPCIS templates, Docker notes, and the development log, see **[docs/index.md](docs/index.md)**.
+For architecture, API, lifecycle steps, EPCIS templates, and deployment, see **[docs/index.md](docs/index.md)**.
