@@ -21,6 +21,21 @@ Fertigung ties the purchase order to both class quantities. Produktion creates t
 
 LGTIN A is `01/04047111793267/10/1a2b`. LGTIN B is `01/04047111288459/10/3c4d`. Both quantities are 20, packed as 10 per pallet.
 
+## Business steps
+
+One business step raises every event file in its range, in order. Einbau is four steps. Rückbau is the same four steps as before.
+
+| Story | Step | Events |
+| --- | --- | --- |
+| Einbau | 1 Ausgang beim Hersteller | `01_Fertigung.json`, `02a_Produktion.json`, `03_Packen.json`, `04_Versand.json` |
+| Einbau | 2 Baustellen-Eingang | `05_Empfang.json`, `06_Entpacken.json` |
+| Einbau | 3 Umlagerung | `07_Umlagerung.json` |
+| Einbau | 4 Einbau | `08_Montage.json` |
+| Rückbau | Rückbau | `09_Demontage.json` |
+| Rückbau | Ausgang Baustelle | `10_Packen.json`, `11_Versand_an_Lindner.json` |
+| Rückbau | Eingang beim Hersteller | `12_Empfang_bei_Lindner.json` |
+| Rückbau | Aufbereitung | `02b_Produktion.json` |
+
 ```mermaid
 flowchart TB
   po["Purchase order"]

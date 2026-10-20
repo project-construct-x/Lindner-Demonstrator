@@ -23,7 +23,7 @@ Knowledge base for agents. Describe the current system and point at source files
 - [Frontend](./frontend.md) — UI stack, session, step buttons, scanner, print, SSE.
 - [Backend and API](./backend.md) — generation, in-memory session, persistence, routes.
 - [EPCIS templates](./epcis-templates.md) — `document.json`, placeholders, how a step is registered.
-- [EPCIS event path](./epcis-eventstrecke/README.md) — ingestion graph from Fertigung through Montage, plus the reference JSON samples.
+- [EPCIS event path](./epcis-eventstrecke/README.md) — ingestion graph and which business step raises which event files.
 - [EPCAT2](./epcat2.md) — capture and query against the Construct-X EPCIS repository.
 - [EPCAT2 subscriptions](./epcat2-subscriptions.md) — webhook subscriptions on saved queries.
 - [Deployment](./deployment.md) — Compose, images, Helm, Pi.

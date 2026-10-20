@@ -59,3 +59,5 @@ Einbau is steps 1–3. Rückbau is steps 4–7.
 | 7 | `aufbereitung` | Aufbereitung | `02b.json` | `7.json` |
 
 Registry: `backend/epcis/steps.py`. Button labels and images: `frontend/src/constants/steps.ts`.
+
+Which event-path files each business step raises, including the Einbau step Umlagerung, is in [Business steps](./epcis-eventstrecke/README.md#business-steps).
