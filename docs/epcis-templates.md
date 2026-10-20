@@ -1,6 +1,6 @@
 # EPCIS templates
 
-Runtime files live in `backend/epcis/`. `backend/epcis-original/` and [docs/epcis-eventstrecke/](./epcis-eventstrecke.md) are reference copies and are not loaded.
+Runtime files live in `backend/epcis/`. `backend/epcis-original/` and [docs/epcis-eventstrecke/](./epcis-eventstrecke/README.md) are reference copies and are not loaded.
 
 ## Document wrapper
 

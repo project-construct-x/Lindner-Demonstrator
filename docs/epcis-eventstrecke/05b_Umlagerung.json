@@ -6,16 +6,17 @@
   "action": "OBSERVE",
   "bizStep": "storing",
   "disposition": "in_progress",
-  // Entweder Option 1: Packstück
-  "epcList": ["https://id.gs1.org/00/040471116815749833"],
-  // Oder Option 2: Quantity
   "quantityList": [
     {
-        "epcClass": "https://id.gs1.org/01/04047111793267/10/1a2b",
-        "quantity": 13
+      "epcClass": "https://id.gs1.org/01/04047111793267/10/1a2b",
+      "quantity": 20
+    },
+    {
+      "epcClass": "https://id.gs1.org/01/04047111288459/10/3c4d",
+      "quantity": 20
     }
   ],
-  "eventTime": "2026-04-17T16:00:00.000Z",
+  "eventTime": "2026-04-18T10:00:00.000Z",
   "eventTimeZoneOffset": "+02:00",
   "readPoint": {
     "id": "https://id.gs1.org/414/4047111987654/254/7k8m"

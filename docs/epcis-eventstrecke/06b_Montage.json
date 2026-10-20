@@ -8,14 +8,14 @@
     "quantityList": [
       {
         "epcClass": "https://id.gs1.org/01/04047111793267/10/1a2b",
-        "quantity": 13
+        "quantity": 20
       },
       {
         "epcClass": "https://id.gs1.org/01/04047111288459/10/3c4d",
-        "quantity": 39
+        "quantity": 20
       }
     ],
-    "eventTime": "2026-04-18T10:00:00.000Z",
+    "eventTime": "2026-04-18T12:00:00.000Z",
     "eventTimeZoneOffset": "+02:00",
     "readPoint": {
       "id": "https://id.gs1.org/414/4047111987654/254/1x2y"

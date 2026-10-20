@@ -1,4 +1,5 @@
-{
+[
+  {
     "@context": [
       "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
     ],
@@ -7,14 +8,14 @@
     "bizStep": "receiving",
     "disposition": "in_progress",
     "epcList": [
-          "https://id.gs1.org/00/040471116815749833",
-          ...
+      "https://id.gs1.org/00/040471116815749819",
+      "https://id.gs1.org/00/040471116815749826"
     ],
     "bizTransactionList": [
-        {
-          "type": "desadv",
-          "bizTransaction": "https://id.gs1.org/253/40471113333333d3e4s4d5v"
-        }
+      {
+        "type": "desadv",
+        "bizTransaction": "https://id.gs1.org/253/4047111333333300001"
+      }
     ],
     "eventTime": "2026-04-17T14:00:00.000Z",
     "eventTimeZoneOffset": "+02:00",
@@ -24,5 +25,34 @@
     "bizLocation": {
       "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
     },
-    "eventID": "urn:uuid:b2c3d4e5-f6a7-4890-b123-456789abcdef0"
+    "eventID": "urn:uuid:ac6983e1-2524-4c43-b8b7-b144b8901f6a"
+  },
+  {
+    "@context": [
+      "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+    ],
+    "type": "ObjectEvent",
+    "action": "OBSERVE",
+    "bizStep": "receiving",
+    "disposition": "in_progress",
+    "epcList": [
+      "https://id.gs1.org/00/040471116815749833",
+      "https://id.gs1.org/00/040471116815749840"
+    ],
+    "bizTransactionList": [
+      {
+        "type": "desadv",
+        "bizTransaction": "https://id.gs1.org/253/4047111333333300002"
+      }
+    ],
+    "eventTime": "2026-04-17T15:00:00.000Z",
+    "eventTimeZoneOffset": "+02:00",
+    "readPoint": {
+      "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+    },
+    "bizLocation": {
+      "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+    },
+    "eventID": "urn:uuid:ee9f66ac-f7e3-4c36-93d8-85097120174c"
   }
+]

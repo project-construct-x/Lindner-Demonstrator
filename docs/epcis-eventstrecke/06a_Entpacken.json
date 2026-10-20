@@ -1,4 +1,49 @@
-{
+[
+  {
+    "@context": [
+      "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+    ],
+    "type": "AggregationEvent",
+    "action": "DELETE",
+    "bizStep": "unpacking",
+    "disposition": "in_progress",
+    "parentID": "https://id.gs1.org/00/040471116815749819",
+    "childQuantityList": [
+      {
+        "epcClass": "https://id.gs1.org/01/04047111793267/10/1a2b",
+        "quantity": 10
+      }
+    ],
+    "eventTime": "2026-04-18T08:00:00.000Z",
+    "eventTimeZoneOffset": "+02:00",
+    "readPoint": {
+      "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+    },
+    "eventID": "urn:uuid:46a80d0c-d268-4159-a92e-c6e5df7564c1"
+  },
+  {
+    "@context": [
+      "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+    ],
+    "type": "AggregationEvent",
+    "action": "DELETE",
+    "bizStep": "unpacking",
+    "disposition": "in_progress",
+    "parentID": "https://id.gs1.org/00/040471116815749826",
+    "childQuantityList": [
+      {
+        "epcClass": "https://id.gs1.org/01/04047111288459/10/3c4d",
+        "quantity": 10
+      }
+    ],
+    "eventTime": "2026-04-18T08:10:00.000Z",
+    "eventTimeZoneOffset": "+02:00",
+    "readPoint": {
+      "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+    },
+    "eventID": "urn:uuid:5efba9a9-1c1f-4c96-acf2-4565e326acff"
+  },
+  {
     "@context": [
       "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
     ],
@@ -10,17 +55,36 @@
     "childQuantityList": [
       {
         "epcClass": "https://id.gs1.org/01/04047111793267/10/1a2b",
-        "quantity": 13
-      },
-      {
-        "epcClass": "https://id.gs1.org/01/04047111288459/10/3c4d",
-        "quantity": 39
+        "quantity": 10
       }
     ],
-    "eventTime": "2026-04-18T08:00:00.000Z",
+    "eventTime": "2026-04-18T08:20:00.000Z",
     "eventTimeZoneOffset": "+02:00",
     "readPoint": {
       "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
     },
-    "eventID": "urn:uuid:c3d4e5f6-a7b8-4901-c234-56789abcdef01"
+    "eventID": "urn:uuid:34875013-bb5a-47ff-94ca-cefa6d69801b"
+  },
+  {
+    "@context": [
+      "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld"
+    ],
+    "type": "AggregationEvent",
+    "action": "DELETE",
+    "bizStep": "unpacking",
+    "disposition": "in_progress",
+    "parentID": "https://id.gs1.org/00/040471116815749840",
+    "childQuantityList": [
+      {
+        "epcClass": "https://id.gs1.org/01/04047111288459/10/3c4d",
+        "quantity": 10
+      }
+    ],
+    "eventTime": "2026-04-18T08:30:00.000Z",
+    "eventTimeZoneOffset": "+02:00",
+    "readPoint": {
+      "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+    },
+    "eventID": "urn:uuid:7b3c5ce2-ea7d-488a-a17c-9b6ad3536b21"
   }
+]
