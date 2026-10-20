@@ -1,0 +1,14 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated EPCIS events
+output/
+
+# Local env overrides (keep .env.development / .env.production in git)
+.env.local
+.env.*.local

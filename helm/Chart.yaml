@@ -1,0 +1,6 @@
+apiVersion: v2
+name: demonstrator
+description: Construct-X demonstrator webapp (frontend + backend)
+type: application
+version: 0.1.0
+appVersion: "latest"

@@ -1,0 +1,27 @@
+{
+  "type": "ObjectEvent",
+  "action": "OBSERVE",
+  "bizStep": "shipping",
+  "disposition": "in_transit",
+  "epcList": [
+    "$sscc"
+  ],
+  "eventTime": "$eventTime",
+  "eventTimeZoneOffset": "$eventTimeZoneOffset",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+  },
+  "sourceList": [
+    {
+      "type": "location",
+      "source": "urn:epc:id:sgln:4047111.987654.0"
+    }
+  ],
+  "destinationList": [
+    {
+      "type": "location",
+      "destination": "urn:epc:id:sgln:4047111.135074.0"
+    }
+  ],
+  "eventID": "$eventID"
+}

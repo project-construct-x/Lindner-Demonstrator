@@ -1,0 +1,10 @@
+__pycache__
+*.pyc
+.pytest_cache
+.venv
+venv
+output
+Dockerfile.dev
+.env.local
+.env.*.local
+.git

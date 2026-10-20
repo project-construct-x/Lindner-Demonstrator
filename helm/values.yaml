@@ -1,0 +1,71 @@
+# Demonstrator Helm Chart - Default Values
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Existing image pull secret for GHCR (see setup-pull-secret.sh)
+# EECC prod uses cx-registry-pull-secret from values-eecc.yaml
+imagePullSecrets: []
+
+backend:
+  image:
+    repository: ghcr.io/project-construct-x/blaupause-demonstrator-dev-setup/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: true
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    storageClass: longhorn
+    mountPath: /backend/output
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+frontend:
+  image:
+    repository: ghcr.io/project-construct-x/blaupause-demonstrator-dev-setup/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: prod-eecc
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+  tlsSecretName: ""
+
+hosts:
+  - demonstrator.example.com
+
+# Poll GHCR for new :latest digests and rollout-restart deployments when changed.
+# Single public image with kubectl + curl + shell (no extra registry auth needed).
+imageWatcher:
+  enabled: false
+  intervalSeconds: 3
+  pullSecretName: ""
+  scriptVersion: "1"
+  image:
+    repository: alpine/k8s
+    tag: "1.31.4"
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 10m
+      memory: 64Mi

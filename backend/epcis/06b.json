@@ -1,0 +1,24 @@
+{
+  "type": "ObjectEvent",
+  "action": "OBSERVE",
+  "bizStep": "installing",
+  "quantityList": [
+    {
+      "epcClass": "$lgtin1",
+      "quantity": 13
+    },
+    {
+      "epcClass": "$lgtin2",
+      "quantity": 39
+    }
+  ],
+  "eventTime": "$eventTime",
+  "eventTimeZoneOffset": "$eventTimeZoneOffset",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+  },
+  "bizLocation": {
+    "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+  },
+  "eventID": "$eventID"
+}

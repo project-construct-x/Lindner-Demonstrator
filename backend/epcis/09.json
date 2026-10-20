@@ -1,0 +1,18 @@
+{
+  "type": "ObjectEvent",
+  "action": "OBSERVE",
+  "bizStep": "receiving",
+  "disposition": "in_progress",
+  "epcList": [
+    "$sscc"
+  ],
+  "eventTime": "$eventTime",
+  "eventTimeZoneOffset": "$eventTimeZoneOffset",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111135074/254/9z8y"
+  },
+  "bizLocation": {
+    "id": "https://id.gs1.org/414/4047111135074/254/9z8y"
+  },
+  "eventID": "$eventID"
+}

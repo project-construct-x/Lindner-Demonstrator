@@ -1,0 +1,23 @@
+{
+  "type": "AggregationEvent",
+  "action": "ADD",
+  "bizStep": "packing",
+  "disposition": "in_progress",
+  "parentID": "$sscc",
+  "childQuantityList": [
+    {
+      "epcClass": "$lgtin1",
+      "quantity": 13
+    },
+    {
+      "epcClass": "$lgtin2",
+      "quantity": 39
+    }
+  ],
+  "eventTime": "$eventTime",
+  "eventTimeZoneOffset": "$eventTimeZoneOffset",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111135074/254/9z8y"
+  },
+  "eventID": "$eventID"
+}

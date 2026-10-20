@@ -1,0 +1,36 @@
+{
+  "type": "ObjectEvent",
+  "action": "OBSERVE",
+  "bizStep": "receiving",
+  "disposition": "in_progress",
+  "epcList": [
+    "$sscc"
+  ],
+  "eventTime": "$eventTime",
+  "eventTimeZoneOffset": "$eventTimeZoneOffset",
+  "readPoint": {
+    "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+  },
+  "bizLocation": {
+    "id": "https://id.gs1.org/414/4047111987654/254/1x2y"
+  },
+  "sensorElementList": [
+    {
+      "sensorReport": [
+        {
+          "type": "gs1:Mass",
+          "cx:property": "co2e",
+          "value": 16.52,
+          "uom": "KGM"
+        },
+        {
+          "type": "gs1:Energy",
+          "cx:property": "energyConsumption",
+          "value": 42,
+          "uom": "KWH"
+        }
+      ]
+    }
+  ],
+  "eventID": "$eventID"
+}

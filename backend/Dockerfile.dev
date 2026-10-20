@@ -1,0 +1,16 @@
+# Dev image — whole ./backend is bind-mounted to /backend at runtime.
+# Uses .env.development (APP_ENV=development) via bind mount + entrypoint.
+FROM python:3.12-slim
+
+WORKDIR /backend
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    APP_ENV=development
+
+COPY requirements.txt docker-entrypoint.dev.sh .env.development ./
+RUN chmod +x docker-entrypoint.dev.sh
+
+EXPOSE 8000
+
+ENTRYPOINT ["sh", "docker-entrypoint.dev.sh"]
